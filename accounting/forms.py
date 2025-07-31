@@ -2,7 +2,8 @@ from django import forms
 from django.forms import ModelForm, inlineformset_factory
 from .models import (
     FactFo, Kharid, ChequesRecieve, ChequePay,
-    Perinf, Goodinf, Sanad, SanadDetail
+    Perinf, Goodinf, Sanad, SanadDetail, Pergrp,
+    Goodgrps, Units, Stores
 )
 
 
@@ -32,7 +33,7 @@ class SaleForm(ModelForm):
 class SaleItemForm(forms.Form):
     """فرم آیتم فاکتور فروش"""
     good_code = forms.ModelChoiceField(
-        queryset=Goodinf.objects.filter(active=True),
+        queryset=Goodinf.objects.filter(status=0),  # فقط کالاهای فعال
         label='کالا',
         widget=forms.Select(attrs={'class': 'form-control'})
     )
@@ -66,17 +67,17 @@ class PurchaseForm(ModelForm):
     """فرم اصلی فاکتور خرید"""
     class Meta:
         model = Kharid
-        fields = ['code', 'shakhs_code', 'date', 'sharh']
+        fields = ['code', 'shakhs_code', 'tarikh', 'sharh']
         widgets = {
             'code': forms.NumberInput(attrs={'class': 'form-control'}),
             'shakhs_code': forms.Select(attrs={'class': 'form-control'}),
-            'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'tarikh': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'sharh': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
         labels = {
             'code': 'شماره فاکتور',
             'shakhs_code': 'تامین‌کننده',
-            'date': 'تاریخ',
+            'tarikh': 'تاریخ',
             'sharh': 'شرح'
         }
 
@@ -84,7 +85,7 @@ class PurchaseForm(ModelForm):
 class PurchaseItemForm(forms.Form):
     """فرم آیتم فاکتور خرید"""
     good_code = forms.ModelChoiceField(
-        queryset=Goodinf.objects.filter(active=True),
+        queryset=Goodinf.objects.filter(status=0),  # فقط کالاهای فعال
         label='کالا',
         widget=forms.Select(attrs={'class': 'form-control'})
     )
@@ -211,7 +212,7 @@ class SaleSearchForm(forms.Form):
         widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
     )
     customer = forms.ModelChoiceField(
-        queryset=Perinf.objects.filter(type=1),
+        queryset=Perinf.objects.filter(status=0),  # فقط اشخاص فعال
         label='مشتری',
         required=False,
         widget=forms.Select(attrs={'class': 'form-control'})
@@ -227,7 +228,7 @@ class SaleSearchForm(forms.Form):
 class InventorySearchForm(forms.Form):
     """فرم جستجو در موجودی انبار"""
     good = forms.ModelChoiceField(
-        queryset=Goodinf.objects.filter(active=True),
+        queryset=Goodinf.objects.filter(status=0),  # فقط کالاهای فعال
         label='کالا',
         required=False,
         widget=forms.Select(attrs={'class': 'form-control'})
@@ -276,3 +277,141 @@ class FinancialReportForm(forms.Form):
         label='گروه‌بندی',
         widget=forms.Select(attrs={'class': 'form-control'})
     ) 
+
+
+class PersonForm(forms.ModelForm):
+    """
+    فرم ایجاد و ویرایش اشخاص
+    """
+    
+    class Meta:
+        model = Perinf
+        fields = [
+            'code', 'name', 'lname', 'fullname', 'grpcode', 
+            'tel1', 'mobile', 'addr1', 'email', 'credit', 
+            'status', 'comment', 'identifier', 'economicno'
+        ]
+        
+        widgets = {
+            'code': forms.HiddenInput(),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'lname': forms.TextInput(attrs={'class': 'form-control'}), # این فیلد را در __init__ اجباری می‌کنیم
+            'fullname': forms.TextInput(attrs={'class': 'form-control', 'readonly': True}),
+            'tel1': forms.TextInput(attrs={'class': 'form-control'}),
+            'mobile': forms.TextInput(attrs={'class': 'form-control'}),
+            'addr1': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'credit': forms.NumberInput(attrs={'class': 'form-control'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'identifier': forms.TextInput(attrs={'class': 'form-control'}),
+            'economicno': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+        
+        labels = {
+            'code': 'کد شخص',
+            'name': 'نام',
+            'lname': 'نام خانوادگی',
+            'fullname': 'نام کامل',
+            'tel1': 'تلفن',
+            'mobile': 'موبایل',
+            'addr1': 'آدرس',
+            'email': 'ایمیل',
+            'credit': 'سقف اعتبار',
+            'status': 'وضعیت',
+            'comment': 'توضیحات',
+            'identifier': 'شناسه ملی/کد ملی',
+            'economicno': 'کد اقتصادی',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # فقط 'lname' را اجباری نگه می‌داریم
+        self.fields['lname'].required = True
+        
+        # تنظیم فیلد grpcode به صورت اختیاری
+        self.fields['grpcode'].required = False
+        self.fields['grpcode'].queryset = Pergrp.objects.using('legacy').all()
+        self.fields['grpcode'].empty_label = "--- بدون گروه ---"
+        
+        # بقیه فیلدهایی که در مدل blank=True هستند را اختیاری می‌کنیم
+        for field_name, field in self.fields.items():
+            if field_name not in ['lname', 'grpcode']:
+                model_field = self.Meta.model._meta.get_field(field_name)
+                if model_field.blank:
+                    field.required = False
+
+        # تنظیم choices برای فیلد status
+        self.fields['status'].widget.choices = [
+            (0, 'فعال'),
+            (1, 'غیرفعال'),
+            (2, 'موقتا غیرفعال')
+        ]
+
+
+class GoodForm(forms.ModelForm):
+    """
+    فرم ایجاد و ویرایش کالاها
+    """
+    
+    class Meta:
+        model = Goodinf
+        fields = [
+            'code', 'name', 'grpcode', 'unit', 'unit2', 'store', 
+            'status', 'consumerprice', 'costbgprd', 'comment', 
+            'abbname', 'kala_name', 'kala_type'
+        ]
+        
+        widgets = {
+            'code': forms.NumberInput(attrs={'class': 'form-control'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'grpcode': forms.Select(attrs={'class': 'form-select'}),
+            'unit': forms.Select(attrs={'class': 'form-select'}),
+            'unit2': forms.Select(attrs={'class': 'form-select'}),
+            'store': forms.Select(attrs={'class': 'form-select'}),
+            'status': forms.Select(attrs={'class': 'form-select'}, choices=[(0, 'فعال'), (1, 'غیرفعال')]),
+            'consumerprice': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'costbgprd': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'abbname': forms.TextInput(attrs={'class': 'form-control'}),
+            'kala_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'kala_type': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+        
+        labels = {
+            'code': 'کد کالا',
+            'name': 'نام کالا',
+            'grpcode': 'گروه کالا',
+            'unit': 'واحد اصلی',
+            'unit2': 'واحد فرعی',
+            'store': 'انبار',
+            'status': 'وضعیت',
+            'consumerprice': 'قیمت مصرف‌کننده',
+            'costbgprd': 'قیمت تمام شده',
+            'comment': 'توضیحات',
+            'abbname': 'نام مختصر',
+            'kala_name': 'نام کالا (انگلیسی)',
+            'kala_type': 'نوع کالا',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # تنظیم queryset برای فیلدهای ForeignKey
+        self.fields['grpcode'].queryset = Goodgrps.objects.using('legacy').all()
+        self.fields['grpcode'].empty_label = "انتخاب گروه"
+        
+        self.fields['unit'].queryset = Units.objects.using('legacy').all()
+        self.fields['unit'].empty_label = "انتخاب واحد"
+        
+        self.fields['unit2'].queryset = Units.objects.using('legacy').all()
+        self.fields['unit2'].empty_label = "انتخاب واحد فرعی"
+        
+        self.fields['store'].queryset = Stores.objects.using('legacy').all()
+        self.fields['store'].empty_label = "انتخاب انبار"
+        
+        # تنظیم مقادیر پیش‌فرض
+        if not self.instance.pk:  # اگر کالای جدید است
+            self.fields['status'].initial = 0  # فعال
+            self.fields['consumerprice'].initial = 0  # قیمت صفر
+            self.fields['costbgprd'].initial = 0  # قیمت تمام شده صفر 

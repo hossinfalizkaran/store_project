@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-box-seam me-2"></i>
+                        {{ title }}
+                    </h5>
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'good_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>
+                            بازگشت به لیست
+                        </a>
+                        <a href="{% url 'good_update' good.code %}" class="btn btn-warning">
+                            <i class="bi bi-pencil me-1"></i>
+                            ویرایش
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <div class="row">
+                        <!-- اطلاعات اصلی -->
+                        <div class="col-md-8">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-muted mb-3">اطلاعات اصلی</h6>
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td class="fw-bold" style="width: 40%;">کد کالا:</td>
+                                            <td><span class="badge bg-primary fs-6">{{ good.code }}</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">نام کالا:</td>
+                                            <td>{{ good.name|default:"-" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">نام مختصر:</td>
+                                            <td>{{ good.abbname|default:"-" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">نام انگلیسی:</td>
+                                            <td>{{ good.kala_name|default:"-" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">نوع کالا:</td>
+                                            <td>{{ good.kala_type|default:"-" }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <h6 class="text-muted mb-3">گروه‌بندی و واحدها</h6>
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td class="fw-bold" style="width: 40%;">گروه کالا:</td>
+                                            <td>
+                                                {% if good.grpcode %}
+                                                    <span class="badge bg-info">{{ good.grpcode.name }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">واحد اصلی:</td>
+                                            <td>
+                                                {% if good.unit %}
+                                                    {{ good.unit.name }}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">واحد فرعی:</td>
+                                            <td>
+                                                {% if good.unit2 %}
+                                                    {{ good.unit2.name }}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">انبار:</td>
+                                            <td>
+                                                {% if good.store %}
+                                                    {{ good.store.name }}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <!-- قیمت‌ها -->
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <h6 class="text-muted mb-3">قیمت‌ها</h6>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="card bg-light">
+                                                <div class="card-body text-center">
+                                                    <h6 class="card-title text-muted">قیمت مصرف‌کننده</h6>
+                                                    <h4 class="text-success mb-0">
+                                                        {% if good.consumerprice %}
+                                                            {{ good.consumerprice|floatformat:0 }}
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </h4>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="card bg-light">
+                                                <div class="card-body text-center">
+                                                    <h6 class="card-title text-muted">قیمت تمام شده</h6>
+                                                    <h4 class="text-info mb-0">
+                                                        {% if good.costbgprd %}
+                                                            {{ good.costbgprd|floatformat:0 }}
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </h4>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="card bg-light">
+                                                <div class="card-body text-center">
+                                                    <h6 class="card-title text-muted">وضعیت</h6>
+                                                    {% if good.status == 0 %}
+                                                        <span class="badge bg-success fs-6">فعال</span>
+                                                    {% else %}
+                                                        <span class="badge bg-danger fs-6">غیرفعال</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- اطلاعات تکمیلی -->
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h6 class="mb-0">اطلاعات تکمیلی</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">توضیحات:</label>
+                                        <p class="text-muted">
+                                            {{ good.comment|default:"توضیحی ثبت نشده است."|linebreaks }}
+                                        </p>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">تاریخ ایجاد:</label>
+                                        <p class="text-muted">
+                                            {% if good.createddate %}
+                                                {{ good.createddate|date:"Y/m/d" }}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">تاریخ آخرین ویرایش:</label>
+                                        <p class="text-muted">
+                                            {% if good.modifieddate %}
+                                                {{ good.modifieddate|date:"Y/m/d" }}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

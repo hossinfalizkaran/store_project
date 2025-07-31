@@ -43,9 +43,24 @@ urlpatterns = [
     path('api/good-info/', views.get_good_info, name='get_good_info'),
     path('api/person-info/', views.get_person_info, name='get_person_info'),
 
-    # لیست‌های داینامیک با تنظیمات UI
+    # ========================================
+    # URL های اشخاص
+    # ========================================
     path('person/list/', views.person_list, name='person_list'),
     path('person/settings/', views.person_settings, name='person_settings'),
+    path('person/create/', views.person_create, name='person_create'),
+    path('person/<int:person_id>/', views.person_detail, name='person_detail'),
+    path('person/<int:person_id>/edit/', views.person_update, name='person_update'),
+    
+    # ========================================
+    # URL های کالاها
+    # ========================================
+    path('goods/', views.good_list, name='good_list'),
+    path('goods/new/', views.good_create, name='good_create'),
+    path('goods/<int:good_id>/', views.good_detail, name='good_detail'),
+    path('goods/<int:good_id>/edit/', views.good_update, name='good_update'),
+    
+    # لیست‌های داینامیک با تنظیمات UI
     path('sales/list-dynamic/', views.sales_list_dynamic, name='sales_list_dynamic'),
     path('purchase/list-dynamic/', views.purchase_list_dynamic, name='purchase_list_dynamic'),
     path('sanad/list-dynamic/', views.sanad_list_dynamic, name='sanad_list_dynamic'),

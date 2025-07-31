@@ -28,16 +28,16 @@ class PerinfModelTest(TestCase):
         self.person = Perinf.objects.create(
             code=1,
             name='احمد محمدی',
-            tel='02112345678',
+            tel1='02112345678',
             type=1,  # مشتری
-            active=True
+            status=0  # فعال
         )
     
     def test_person_creation(self):
         """تست ایجاد شخص"""
         self.assertEqual(self.person.name, 'احمد محمدی')
         self.assertEqual(self.person.type, 1)
-        self.assertTrue(self.person.active)
+        self.assertEqual(self.person.status, 0)  # فعال
     
     def test_person_str(self):
         """تست نمایش رشته‌ای شخص"""
@@ -130,7 +130,7 @@ class SalesViewTest(TestCase):
             code=1,
             name='احمد محمدی',
             type=1,
-            active=True
+            status=0  # فعال
         )
         
         # ایجاد کالا

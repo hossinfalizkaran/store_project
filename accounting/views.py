@@ -1119,56 +1119,47 @@ def get_person_info(request):
 @login_required
 def person_list(request):
     """
-    نمایش لیست اشخاص با قابلیت جستجو و صفحه‌بندی.
+    نمایش لیست اشخاص با قابلیت جستجو و صفحه‌بندی (سازگار با SQLite و SQL Server).
     """
     from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
     from django.db.models import Q
-    from django.db import connection
     
-    # دریافت لیست اولیه اشخاص به همراه گروه آنها برای بهینه‌سازی کوئری
+    # queryset پایه
     persons_qs = Perinf.objects.using('legacy').select_related('grpcode').order_by('code')
 
     # منطق جستجو
     search_query = request.GET.get('q', '').strip()
     if search_query:
-        # استفاده از کوئری خام SQL برای جستجوی بهتر با COLLATE
-        with connection.cursor() as cursor:
-            # استفاده از COLLATE برای جستجوی غیرحساس به حروف فارسی و عربی
-            query = """
-                SELECT p.*, pg.Name as GroupName 
-                FROM Perinf p 
-                LEFT JOIN Pergrp pg ON p.GrpCode = pg.Code
-                WHERE (
-                    ISNULL(p.Code, '') LIKE %s OR
-                    ISNULL(p.FullName, '') COLLATE Persian_100_CI_AI LIKE %s COLLATE Persian_100_CI_AI OR
-                    ISNULL(p.Tel1, '') LIKE %s OR
-                    ISNULL(p.Mobile, '') LIKE %s
-                )
-                ORDER BY p.Code
-            """
-            search_param = f'%{search_query}%'
-            cursor.execute(query, [search_param, search_param, search_param, search_param])
-            
-            # تبدیل نتایج به QuerySet
-            columns = [col[0] for col in cursor.description]
-            persons_data = cursor.fetchall()
-            
-            # ایجاد QuerySet از نتایج
-            persons_qs = Perinf.objects.using('legacy').select_related('grpcode').filter(
-                code__in=[row[columns.index('Code')] for row in persons_data]
-            ).order_by('code')
+        # نرمال‌سازی ورودی کاربر
+        normalized_query = normalize_persian_text(search_query)
+        
+        # استفاده از ORM جنگو برای ساخت کوئری
+        # __icontains به صورت پیش‌فرض case-insensitive است
+        persons_qs = persons_qs.filter(
+            Q(fullname__icontains=normalized_query) |
+            Q(code__icontains=normalized_query) |
+            Q(tel1__icontains=normalized_query) |
+            Q(mobile__icontains=normalized_query)
+        )
+        
+        # برای حل مشکل "ی" و "ک" عربی، یک فیلتر اضافه می‌کنیم
+        # این بخش کمی پیچیده‌تر است چون ORM مستقیم آن را پشتیبانی نمی‌کند
+        # اما راه حل ساده‌تر این است که در جستجوی fullname، هر دو حالت را در نظر بگیریم
+        arabic_query = normalized_query.replace('ی', 'ي').replace('ک', 'ك')
+        if arabic_query != normalized_query:
+             persons_qs = persons_qs | Perinf.objects.using('legacy').select_related('grpcode').filter(
+                Q(fullname__icontains=arabic_query)
+             )
 
-    # منطق صفحه‌بندی (Pagination)
+    # منطق صفحه‌بندی (بدون تغییر)
     page_number = request.GET.get('page', 1)
-    paginator = Paginator(persons_qs, 25)  # نمایش 25 آیتم در هر صفحه
+    paginator = Paginator(persons_qs, 25)
 
     try:
         page_obj = paginator.page(page_number)
     except PageNotAnInteger:
-        # اگر شماره صفحه عدد نباشد، صفحه اول را نمایش بده
         page_obj = paginator.page(1)
     except EmptyPage:
-        # اگر شماره صفحه خارج از محدوده باشد، آخرین صفحه را نمایش بده
         page_obj = paginator.page(paginator.num_pages)
 
     context = {
@@ -1178,6 +1169,227 @@ def person_list(request):
         'title': 'لیست اشخاص',
     }
     return render(request, 'person_list.html', context)
+
+
+@login_required
+def person_detail(request, person_id):
+    """
+    نمایش جزئیات شخص
+    """
+    from django.shortcuts import get_object_or_404
+    
+    # دریافت شخص مورد نظر
+    person = get_object_or_404(Perinf.objects.using('legacy').select_related('grpcode'), code=person_id)
+    
+    context = {
+        'person': person,
+        'title': f'جزئیات شخص - {person.fullname or person.code}',
+    }
+    
+    return render(request, 'person_detail.html', context)
+
+
+@login_required
+def person_create(request):
+    """
+    ایجاد شخص جدید
+    """
+    from django.shortcuts import redirect
+    from .forms import PersonForm
+    
+    if request.method == 'POST':
+        form = PersonForm(request.POST)
+        if form.is_valid():
+            person = form.save(commit=False)
+            # استفاده از دیتابیس legacy
+            person.save(using='legacy')
+            messages.success(request, f'شخص "{person.fullname or person.name}" با موفقیت ایجاد شد.')
+            return redirect('person_list')
+    else:
+        form = PersonForm()
+    
+    context = {
+        'form': form,
+        'title': 'ایجاد شخص جدید',
+        'is_create': True,
+    }
+    
+    return render(request, 'person_form.html', context)
+
+
+@login_required
+def person_update(request, person_id):
+    """
+    ویرایش شخص موجود
+    """
+    from django.shortcuts import redirect
+    from .forms import PersonForm
+    
+    person = get_object_or_404(Perinf.objects.using('legacy'), code=person_id)
+    
+    if request.method == 'POST':
+        form = PersonForm(request.POST, instance=person)
+        if form.is_valid():
+            person = form.save(commit=False)
+            # استفاده از دیتابیس legacy
+            person.save(using='legacy')
+            messages.success(request, f'اطلاعات شخص "{person.fullname or person.name}" با موفقیت بروزرسانی شد.')
+            return redirect('person_detail', person_id=person.code)
+    else:
+        form = PersonForm(instance=person)
+    
+    context = {
+        'form': form,
+        'person': person,
+        'title': f'ویرایش شخص - {person.fullname or person.name or person.code}',
+        'is_create': False,
+    }
+    
+    return render(request, 'person_form.html', context)
+
+
+# ========================================
+# View های مربوط به کالاها
+# ========================================
+
+@login_required
+def good_list(request):
+    """
+    لیست کالاها با قابلیت جستجو و صفحه‌بندی
+    """
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    from django.db.models import Q
+    
+    # queryset پایه
+    goods_qs = Goodinf.objects.using('legacy').select_related('grpcode', 'unit', 'unit2', 'store').order_by('code')
+
+    # منطق جستجو
+    search_query = request.GET.get('q', '').strip()
+    if search_query:
+        # نرمال‌سازی ورودی کاربر
+        normalized_query = normalize_persian_text(search_query)
+        
+        # استفاده از ORM جنگو برای ساخت کوئری
+        goods_qs = goods_qs.filter(
+            Q(name__icontains=normalized_query) |
+            Q(code__icontains=normalized_query) |
+            Q(abbname__icontains=normalized_query) |
+            Q(kala_name__icontains=normalized_query)
+        )
+        
+        # برای حل مشکل "ی" و "ک" عربی، یک فیلتر اضافه می‌کنیم
+        arabic_query = normalized_query.replace('ی', 'ي').replace('ک', 'ك')
+        if arabic_query != normalized_query:
+             goods_qs = goods_qs | Goodinf.objects.using('legacy').select_related('grpcode', 'unit', 'unit2', 'store').filter(
+                Q(name__icontains=arabic_query)
+             )
+
+    # منطق صفحه‌بندی
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(goods_qs, 25)
+
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
+    context = {
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'total_count': paginator.count,
+        'title': 'لیست کالاها',
+    }
+    return render(request, 'good_list.html', context)
+
+
+@login_required
+def good_detail(request, good_id):
+    """
+    نمایش جزئیات کالا
+    """
+    from django.shortcuts import get_object_or_404
+    
+    # دریافت کالای مورد نظر
+    good = get_object_or_404(Goodinf.objects.using('legacy').select_related('grpcode', 'unit', 'unit2', 'store'), code=good_id)
+    
+    context = {
+        'good': good,
+        'title': f'جزئیات کالا - {good.name or good.code}',
+    }
+    
+    return render(request, 'good_detail.html', context)
+
+
+@login_required
+def good_create(request):
+    """
+    ایجاد کالای جدید
+    """
+    from django.shortcuts import redirect
+    from .forms import GoodForm
+    
+    if request.method == 'POST':
+        form = GoodForm(request.POST)
+        if form.is_valid():
+            good = form.save(commit=False)
+            
+            # تولید کد جدید اگر کد خالی باشد
+            if not good.code:
+                try:
+                    max_code = Goodinf.objects.using('legacy').aggregate(
+                        models.Max('code')
+                    )['code__max'] or 0
+                    good.code = max_code + 1
+                except:
+                    good.code = 1
+            
+            # استفاده از دیتابیس legacy
+            good.save(using='legacy')
+            messages.success(request, f'کالای "{good.name or good.code}" با موفقیت ایجاد شد.')
+            return redirect('good_list')
+    else:
+        form = GoodForm()
+    
+    context = {
+        'form': form,
+        'title': 'ایجاد کالای جدید',
+        'is_create': True,
+    }
+    
+    return render(request, 'good_form.html', context)
+
+
+@login_required
+def good_update(request, good_id):
+    """
+    ویرایش کالای موجود
+    """
+    from django.shortcuts import redirect
+    from .forms import GoodForm
+    
+    good = get_object_or_404(Goodinf.objects.using('legacy'), code=good_id)
+    
+    if request.method == 'POST':
+        form = GoodForm(request.POST, instance=good)
+        if form.is_valid():
+            good = form.save(commit=False)
+            # استفاده از دیتابیس legacy
+            good.save(using='legacy')
+            messages.success(request, f'اطلاعات کالای "{good.name or good.code}" با موفقیت بروزرسانی شد.')
+            return redirect('good_detail', good_id=good.code)
+    else:
+        form = GoodForm(instance=good)
+    
+    context = {
+        'form': form,
+        'good': good,
+        'title': f'ویرایش کالا - {good.name or good.code}',
+        'is_create': False,
+    }
+    
+    return render(request, 'good_form.html', context)
 
 
 @login_required

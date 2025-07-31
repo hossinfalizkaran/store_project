@@ -37,6 +37,9 @@ urlpatterns = [
     
     # مدیریت اشخاص
     path('persons/', accounting_views.person_list, name='person_list'),
+    path('persons/new/', accounting_views.person_create, name='person_create'),
+    path('persons/<int:person_id>/', accounting_views.person_detail, name='person_detail'),
+    path('persons/<int:person_id>/edit/', accounting_views.person_update, name='person_update'),
     path('persons/settings/', accounting_views.person_settings, name='person_settings'),
     
     # مدیریت کالاها

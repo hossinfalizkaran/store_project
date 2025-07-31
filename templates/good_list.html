@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-box-seam me-2"></i>
+                        {{ title }}
+                    </h5>
+                    <a href="{% url 'good_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>
+                        کالای جدید
+                    </a>
+                </div>
+                
+                <div class="card-body">
+                    <!-- فرم جستجو -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <form method="get" class="d-flex">
+                                <input type="text" 
+                                       name="q" 
+                                       value="{{ search_query }}" 
+                                       class="form-control me-2" 
+                                       placeholder="جستجو در نام، کد یا نام مختصر کالا...">
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                                {% if search_query %}
+                                    <a href="{% url 'good_list' %}" class="btn btn-outline-secondary ms-2">
+                                        <i class="bi bi-x-circle"></i>
+                                    </a>
+                                {% endif %}
+                            </form>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <small class="text-muted">
+                                تعداد کل: {{ total_count }} کالا
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- جدول کالاها -->
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>کد</th>
+                                    <th>نام کالا</th>
+                                    <th>نام مختصر</th>
+                                    <th>گروه</th>
+                                    <th>واحد اصلی</th>
+                                    <th>قیمت مصرف‌کننده</th>
+                                    <th>وضعیت</th>
+                                    <th>عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for good in page_obj %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ good.code }}</strong>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'good_detail' good.code %}" class="text-decoration-none">
+                                            {{ good.name|default:"-" }}
+                                        </a>
+                                    </td>
+                                    <td>{{ good.abbname|default:"-" }}</td>
+                                    <td>
+                                        {% if good.grpcode %}
+                                            <span class="badge bg-info">{{ good.grpcode.name }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if good.unit %}
+                                            {{ good.unit.name }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if good.consumerprice %}
+                                            <span class="text-success">{{ good.consumerprice|floatformat:0 }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if good.status == 0 %}
+                                            <span class="badge bg-success">فعال</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">غیرفعال</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'good_detail' good.code %}" 
+                                               class="btn btn-outline-info" 
+                                               title="مشاهده جزئیات">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{% url 'good_update' good.code %}" 
+                                               class="btn btn-outline-warning" 
+                                               title="ویرایش">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <i class="bi bi-inbox display-4"></i>
+                                            <p class="mt-2">هیچ کالایی یافت نشد.</p>
+                                            {% if search_query %}
+                                                <a href="{% url 'good_list' %}" class="btn btn-outline-primary">
+                                                    مشاهده همه کالاها
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- صفحه‌بندی -->
+                    {% if page_obj.has_other_pages %}
+                        {% include 'partials/_pagination.html' with page_obj=page_obj %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
