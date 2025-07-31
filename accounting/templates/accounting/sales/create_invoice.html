@@ -1,0 +1,488 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .invoice-form {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .form-section {
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        padding: 15px;
+        margin-bottom: 15px;
+        background: #f9f9f9;
+    }
+    
+    .form-section h4 {
+        color: #333;
+        margin-bottom: 15px;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 5px;
+    }
+    
+    .item-row {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .item-row:hover {
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .btn-add-item {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .btn-add-item:hover {
+        background: #218838;
+    }
+    
+    .btn-remove-item {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 4px 8px;
+        border-radius: 3px;
+        cursor: pointer;
+    }
+    
+    .btn-remove-item:hover {
+        background: #c82333;
+    }
+    
+    .total-section {
+        background: #e8f5e8;
+        border: 2px solid #28a745;
+        border-radius: 6px;
+        padding: 15px;
+        margin-top: 20px;
+    }
+    
+    .total-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-weight: bold;
+    }
+    
+    .total-final {
+        font-size: 18px;
+        color: #28a745;
+        border-top: 2px solid #28a745;
+        padding-top: 10px;
+    }
+    
+    .form-control {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 8px 12px;
+        width: 100%;
+    }
+    
+    .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    }
+    
+    .alert {
+        padding: 12px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+    }
+    
+    .alert-success {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+    }
+    
+    .alert-danger {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">{{ title }}</h2>
+            
+            <!-- پیام‌های سیستم -->
+            <div id="message-container"></div>
+            
+            <form id="sale-invoice-form" class="invoice-form">
+                <!-- اطلاعات سربرگ فاکتور -->
+                <div class="form-section">
+                    <h4>اطلاعات سربرگ فاکتور</h4>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="customer_code">مشتری *</label>
+                            <select id="customer_code" name="customer_code" class="form-control" required>
+                                <option value="">انتخاب مشتری</option>
+                                {% for customer in customers %}
+                                <option value="{{ customer.code }}">{{ customer.name }} - {{ customer.code }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="invoice_date">تاریخ فاکتور</label>
+                            <input type="date" id="invoice_date" name="invoice_date" class="form-control" 
+                                   value="{{ today_date|date:'Y-m-d' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="description">شرح فاکتور</label>
+                            <input type="text" id="description" name="description" class="form-control" 
+                                   placeholder="شرح فاکتور">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="cash_payment">پرداخت نقدی</label>
+                            <input type="number" id="cash_payment" name="cash_payment" class="form-control" 
+                                   step="0.01" placeholder="0">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- آیتم‌های فاکتور -->
+                <div class="form-section">
+                    <h4>آیتم‌های فاکتور</h4>
+                    <div id="items-container">
+                        <!-- آیتم‌ها اینجا اضافه می‌شوند -->
+                    </div>
+                    <button type="button" class="btn-add-item" onclick="addItem()">
+                        <i class="fas fa-plus"></i> اضافه کردن آیتم
+                    </button>
+                </div>
+                
+                <!-- خلاصه مبالغ -->
+                <div class="total-section">
+                    <h4>خلاصه مبالغ</h4>
+                    <div class="total-row">
+                        <span>جمع کل:</span>
+                        <span id="subtotal">0</span>
+                    </div>
+                    <div class="total-row">
+                        <span>مالیات:</span>
+                        <span id="total_tax">0</span>
+                    </div>
+                    <div class="total-row">
+                        <span>عوارض:</span>
+                        <span id="total_charge">0</span>
+                    </div>
+                    <div class="total-row total-final">
+                        <span>مبلغ نهایی:</span>
+                        <span id="final_total">0</span>
+                    </div>
+                </div>
+                
+                <!-- دکمه‌های عملیات -->
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-save"></i> ثبت فاکتور
+                    </button>
+                    <a href="{% url 'accounting:sales_list' %}" class="btn btn-secondary btn-lg">
+                        <i class="fas fa-arrow-right"></i> بازگشت
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Template برای آیتم‌ها -->
+<template id="item-template">
+    <div class="item-row" data-item-index="">
+        <div class="row">
+            <div class="col-md-2">
+                <label>کالا *</label>
+                <select class="form-control good-select" required>
+                    <option value="">انتخاب کالا</option>
+                    {% for good in goods %}
+                    <option value="{{ good.code }}" data-price="{{ good.price|default:0 }}">
+                        {{ good.name }} - {{ good.code }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label>انبار</label>
+                <select class="form-control store-select">
+                    <option value="1">انبار اصلی</option>
+                    {% for store in stores %}
+                    <option value="{{ store.code }}">{{ store.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label>مقدار *</label>
+                <input type="number" class="form-control quantity-input" step="0.01" min="0" required>
+            </div>
+            <div class="col-md-2">
+                <label>قیمت واحد *</label>
+                <input type="number" class="form-control unit-price-input" step="0.01" min="0" required>
+            </div>
+            <div class="col-md-1">
+                <label>تخفیف %</label>
+                <input type="number" class="form-control discount-input" step="0.01" min="0" value="0">
+            </div>
+            <div class="col-md-1">
+                <label>مالیات %</label>
+                <input type="number" class="form-control tax-input" step="0.01" min="0" value="9">
+            </div>
+            <div class="col-md-1">
+                <label>عوارض %</label>
+                <input type="number" class="form-control charge-input" step="0.01" min="0" value="0">
+            </div>
+            <div class="col-md-2">
+                <label>جمع کل</label>
+                <input type="number" class="form-control item-total" readonly>
+            </div>
+            <div class="col-md-1">
+                <label>&nbsp;</label>
+                <button type="button" class="btn-remove-item" onclick="removeItem(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let itemCounter = 0;
+
+// اضافه کردن آیتم جدید
+function addItem() {
+    const container = document.getElementById('items-container');
+    const template = document.getElementById('item-template');
+    const clone = template.content.cloneNode(true);
+    
+    const itemRow = clone.querySelector('.item-row');
+    itemRow.setAttribute('data-item-index', itemCounter);
+    
+    // اضافه کردن event listeners
+    const goodSelect = itemRow.querySelector('.good-select');
+    const quantityInput = itemRow.querySelector('.quantity-input');
+    const unitPriceInput = itemRow.querySelector('.unit-price-input');
+    const discountInput = itemRow.querySelector('.discount-input');
+    const taxInput = itemRow.querySelector('.tax-input');
+    const chargeInput = itemRow.querySelector('.charge-input');
+    
+    goodSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const price = selectedOption.getAttribute('data-price');
+        if (price) {
+            unitPriceInput.value = price;
+            calculateItemTotal(itemRow);
+        }
+    });
+    
+    [quantityInput, unitPriceInput, discountInput, taxInput, chargeInput].forEach(input => {
+        input.addEventListener('input', () => calculateItemTotal(itemRow));
+    });
+    
+    container.appendChild(clone);
+    itemCounter++;
+    
+    // اضافه کردن اولین آیتم به صورت خودکار
+    if (itemCounter === 1) {
+        goodSelect.focus();
+    }
+}
+
+// حذف آیتم
+function removeItem(button) {
+    const itemRow = button.closest('.item-row');
+    itemRow.remove();
+    calculateTotals();
+}
+
+// محاسبه جمع کل آیتم
+function calculateItemTotal(itemRow) {
+    const quantity = parseFloat(itemRow.querySelector('.quantity-input').value) || 0;
+    const unitPrice = parseFloat(itemRow.querySelector('.unit-price-input').value) || 0;
+    const discountPercent = parseFloat(itemRow.querySelector('.discount-input').value) || 0;
+    
+    const subtotal = quantity * unitPrice;
+    const discount = subtotal * (discountPercent / 100);
+    const afterDiscount = subtotal - discount;
+    
+    const taxPercent = parseFloat(itemRow.querySelector('.tax-input').value) || 0;
+    const chargePercent = parseFloat(itemRow.querySelector('.charge-input').value) || 0;
+    
+    const tax = afterDiscount * (taxPercent / 100);
+    const charge = afterDiscount * (chargePercent / 100);
+    
+    const total = afterDiscount + tax + charge;
+    
+    itemRow.querySelector('.item-total').value = total.toFixed(2);
+    
+    calculateTotals();
+}
+
+// محاسبه جمع کل فاکتور
+function calculateTotals() {
+    let subtotal = 0;
+    let totalTax = 0;
+    let totalCharge = 0;
+    
+    document.querySelectorAll('.item-row').forEach(itemRow => {
+        const quantity = parseFloat(itemRow.querySelector('.quantity-input').value) || 0;
+        const unitPrice = parseFloat(itemRow.querySelector('.unit-price-input').value) || 0;
+        const discountPercent = parseFloat(itemRow.querySelector('.discount-input').value) || 0;
+        const taxPercent = parseFloat(itemRow.querySelector('.tax-input').value) || 0;
+        const chargePercent = parseFloat(itemRow.querySelector('.charge-input').value) || 0;
+        
+        const itemSubtotal = quantity * unitPrice;
+        const itemDiscount = itemSubtotal * (discountPercent / 100);
+        const itemAfterDiscount = itemSubtotal - itemDiscount;
+        
+        const itemTax = itemAfterDiscount * (taxPercent / 100);
+        const itemCharge = itemAfterDiscount * (chargePercent / 100);
+        
+        subtotal += itemAfterDiscount;
+        totalTax += itemTax;
+        totalCharge += itemCharge;
+    });
+    
+    const finalTotal = subtotal + totalTax + totalCharge;
+    
+    document.getElementById('subtotal').textContent = subtotal.toFixed(2);
+    document.getElementById('total_tax').textContent = totalTax.toFixed(2);
+    document.getElementById('total_charge').textContent = totalCharge.toFixed(2);
+    document.getElementById('final_total').textContent = finalTotal.toFixed(2);
+}
+
+// ارسال فرم
+document.getElementById('sale-invoice-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // اعتبارسنجی فرم
+    const customerCode = document.getElementById('customer_code').value;
+    if (!customerCode) {
+        showMessage('لطفاً مشتری را انتخاب کنید', 'danger');
+        return;
+    }
+    
+    const items = [];
+    let hasItems = false;
+    
+    document.querySelectorAll('.item-row').forEach(itemRow => {
+        const goodCode = itemRow.querySelector('.good-select').value;
+        const quantity = itemRow.querySelector('.quantity-input').value;
+        const unitPrice = itemRow.querySelector('.unit-price-input').value;
+        const storeCode = itemRow.querySelector('.store-select').value;
+        const discount = itemRow.querySelector('.discount-input').value;
+        const taxPercent = itemRow.querySelector('.tax-input').value;
+        const chargePercent = itemRow.querySelector('.charge-input').value;
+        const description = itemRow.querySelector('.good-select option:checked').text;
+        
+        if (goodCode && quantity && unitPrice) {
+            items.push({
+                good_code: parseInt(goodCode),
+                quantity: parseFloat(quantity),
+                unit_price: parseFloat(unitPrice),
+                store_code: parseInt(storeCode),
+                discount: parseFloat(discount),
+                tax_percent: parseFloat(taxPercent),
+                charge_percent: parseFloat(chargePercent),
+                description: description
+            });
+            hasItems = true;
+        }
+    });
+    
+    if (!hasItems) {
+        showMessage('حداقل یک آیتم باید در فاکتور وجود داشته باشد', 'danger');
+        return;
+    }
+    
+    // آماده‌سازی داده‌ها برای ارسال
+    const formData = {
+        customer_code: parseInt(customerCode),
+        date: document.getElementById('invoice_date').value,
+        description: document.getElementById('description').value,
+        cash_payment: parseFloat(document.getElementById('cash_payment').value) || 0,
+        items: items
+    };
+    
+    // ارسال درخواست
+    fetch('{% url "accounting:create_sale_invoice" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            // پاک کردن فرم
+            document.getElementById('sale-invoice-form').reset();
+            document.getElementById('items-container').innerHTML = '';
+            itemCounter = 0;
+            calculateTotals();
+        } else {
+            showMessage(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        showMessage('خطا در ارتباط با سرور', 'danger');
+        console.error('Error:', error);
+    });
+});
+
+// نمایش پیام
+function showMessage(message, type) {
+    const container = document.getElementById('message-container');
+    container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+    
+    // حذف خودکار پیام بعد از 5 ثانیه
+    setTimeout(() => {
+        container.innerHTML = '';
+    }, 5000);
+}
+
+// دریافت CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// اضافه کردن اولین آیتم به صورت خودکار
+document.addEventListener('DOMContentLoaded', function() {
+    addItem();
+});
+</script>
+{% endblock %} 

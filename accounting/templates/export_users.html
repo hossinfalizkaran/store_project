@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>استخراج کاربران و رمزهای عبور</title>
+    <style>
+        body {
+            font-family: 'Vazir', Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .success-box {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #28a745;
+        }
+        .error-box {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #dc3545;
+        }
+        .info-box {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196f3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: right;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .password-cell {
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            background-color: #f8f9fa;
+        }
+        .download-link {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .download-link:hover {
+            background-color: #0056b3;
+        }
+        .file-path {
+            font-family: monospace;
+            background-color: #f8f9fa;
+            padding: 5px;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 استخراج کاربران و رمزهای عبور</h1>
+        
+        {% if success %}
+            <div class="success-box">
+                <h3>✅ عملیات موفقیت‌آمیز</h3>
+                <p><strong>تعداد کاربران استخراج شده:</strong> {{ users_count }} کاربر</p>
+                <p><strong>مسیر فایل:</strong> <span class="file-path">{{ file_path }}</span></p>
+                
+                <a href="file://{{ file_path }}" class="download-link" target="_blank">
+                    📄 باز کردن فایل در مرورگر
+                </a>
+            </div>
+
+            <div class="info-box">
+                <h3>📋 نمونه کاربران (10 کاربر اول)</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>نام کاربری</th>
+                            <th>ID</th>
+                            <th>Code</th>
+                            <th>رمز عبور</th>
+                            <th>وضعیت فعال</th>
+                            <th>موبایل</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.1 }}</td>
+                            <td>{{ user.0 }}</td>
+                            <td>{{ user.4 }}</td>
+                            <td class="password-cell">{{ user.2|default:"خالی" }}</td>
+                            <td>{{ user.3|yesno:"فعال,غیرفعال" }}</td>
+                            <td>{{ user.7|default:"خالی" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="margin-top: 20px; padding: 15px; background-color: #fff3cd; border-radius: 5px; border-left: 4px solid #ffc107;">
+                <h3>💡 راهنمای استفاده</h3>
+                <ul>
+                    <li>فایل <code>users_passwords.txt</code> در پوشه پروژه ذخیره شده است</li>
+                    <li>می‌توانید این فایل را در هر ویرایشگر متنی باز کنید</li>
+                    <li>تمام اطلاعات کاربران شامل رمزهای عبور در این فایل موجود است</li>
+                    <li>از این اطلاعات برای تست لاگین استفاده کنید</li>
+                </ul>
+            </div>
+
+        {% else %}
+            <div class="error-box">
+                <h3>❌ خطا در عملیات</h3>
+                <p><strong>پیام خطا:</strong> {{ error }}</p>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html> 

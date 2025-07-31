@@ -1,0 +1,430 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}صفحه اصلی - سیستم حسابداری محک{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+    
+    .module-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        padding: 25px;
+        text-align: center;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .module-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        border-color: #007bff;
+    }
+    
+    .module-icon {
+        font-size: 48px;
+        margin-bottom: 15px;
+        display: block;
+    }
+    
+    .module-title {
+        font-size: 20px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 10px;
+    }
+    
+    .module-description {
+        color: #666;
+        margin-bottom: 20px;
+        line-height: 1.5;
+    }
+    
+    .module-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .action-btn {
+        display: inline-block;
+        padding: 10px 20px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .action-btn.primary {
+        background: #007bff;
+        color: white;
+    }
+    
+    .action-btn.primary:hover {
+        background: #0056b3;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .action-btn.secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .action-btn.secondary:hover {
+        background: #545b62;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .action-btn.success {
+        background: #28a745;
+        color: white;
+    }
+    
+    .action-btn.success:hover {
+        background: #1e7e34;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .action-btn.warning {
+        background: #ffc107;
+        color: #212529;
+    }
+    
+    .action-btn.warning:hover {
+        background: #e0a800;
+        color: #212529;
+        text-decoration: none;
+    }
+    
+    .action-btn.info {
+        background: #17a2b8;
+        color: white;
+    }
+    
+    .action-btn.info:hover {
+        background: #117a8b;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .stats-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 30px;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 15px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 8px;
+    }
+    
+    .stat-number {
+        font-size: 32px;
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        font-size: 14px;
+        opacity: 0.9;
+    }
+    
+    .quick-actions {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 30px;
+    }
+    
+    .quick-actions h3 {
+        color: #333;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    
+    .quick-actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+    }
+    
+    .quick-action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 15px;
+        background: white;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #333;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    
+    .quick-action-btn:hover {
+        border-color: #007bff;
+        color: #007bff;
+        text-decoration: none;
+        transform: translateY(-2px);
+    }
+    
+    .welcome-section {
+        text-align: center;
+        margin-bottom: 30px;
+        padding: 30px;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        border-radius: 12px;
+    }
+    
+    .welcome-title {
+        font-size: 28px;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    
+    .welcome-subtitle {
+        font-size: 16px;
+        opacity: 0.9;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- بخش خوش‌آمدگویی -->
+<div class="welcome-section">
+    <div class="welcome-title">🎉 خوش آمدید به سیستم حسابداری محک</div>
+    <div class="welcome-subtitle">مدیریت کامل عملیات مالی و انبارداری</div>
+</div>
+
+<!-- بخش آمار کلی -->
+<div class="stats-section">
+    <h3 style="margin-bottom: 20px; text-align: center;">📊 آمار کلی سیستم</h3>
+    <div class="stats-grid">
+        <div class="stat-item">
+            <span class="stat-number">{{ total_customers|default:0 }}</span>
+            <span class="stat-label">مشتریان</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">{{ total_goods|default:0 }}</span>
+            <span class="stat-label">کالاها</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">{{ total_sales|default:0 }}</span>
+            <span class="stat-label">فاکتورهای فروش</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">{{ total_purchases|default:0 }}</span>
+            <span class="stat-label">فاکتورهای خرید</span>
+        </div>
+    </div>
+</div>
+
+<!-- عملیات سریع -->
+<div class="quick-actions">
+    <h3>⚡ عملیات سریع</h3>
+    <div class="quick-actions-grid">
+        <a href="{% url 'accounting:create_sale_invoice' %}" class="quick-action-btn">
+            <span>📝</span>
+            <span>ایجاد فاکتور فروش</span>
+        </a>
+        <a href="{% url 'accounting:sales_list' %}" class="quick-action-btn">
+            <span>📋</span>
+            <span>لیست فاکتورهای فروش</span>
+        </a>
+        <a href="{% url 'accounting:purchase_create' %}" class="quick-action-btn">
+            <span>🛒</span>
+            <span>ایجاد فاکتور خرید</span>
+        </a>
+        <a href="{% url 'accounting:cheque_receive_create' %}" class="quick-action-btn">
+            <span>💳</span>
+            <span>ثبت چک دریافتی</span>
+        </a>
+        <a href="{% url 'accounting:cheque_pay_create' %}" class="quick-action-btn">
+            <span>💸</span>
+            <span>ثبت چک پرداختی</span>
+        </a>
+        <a href="{% url 'accounting:inventory_report' %}" class="quick-action-btn">
+            <span>📊</span>
+            <span>گزارش موجودی</span>
+        </a>
+    </div>
+</div>
+
+<!-- ماژول‌های اصلی -->
+<div class="dashboard">
+    <!-- ماژول فروش -->
+    <div class="module-card">
+        <span class="module-icon">🛍️</span>
+        <div class="module-title">مدیریت فروش</div>
+        <div class="module-description">
+            ثبت فاکتورهای فروش، مدیریت مشتریان و پیگیری سفارشات
+        </div>
+        <div class="module-actions">
+            <a href="{% url 'accounting:create_sale_invoice' %}" class="action-btn primary">
+                📝 ایجاد فاکتور فروش جدید
+            </a>
+            <a href="{% url 'accounting:sales_list' %}" class="action-btn secondary">
+                📋 مشاهده لیست فاکتورها
+            </a>
+        </div>
+    </div>
+
+    <!-- ماژول خرید -->
+    <div class="module-card">
+        <span class="module-icon">🛒</span>
+        <div class="module-title">مدیریت خرید</div>
+        <div class="module-description">
+            ثبت فاکتورهای خرید، مدیریت تامین‌کنندگان و کنترل موجودی
+        </div>
+        <div class="module-actions">
+            <a href="{% url 'accounting:purchase_create' %}" class="action-btn primary">
+                📝 ایجاد فاکتور خرید جدید
+            </a>
+            <a href="{% url 'accounting:purchase_list' %}" class="action-btn secondary">
+                📋 مشاهده لیست خریدها
+            </a>
+        </div>
+    </div>
+
+    <!-- ماژول چک‌های دریافتی -->
+    <div class="module-card">
+        <span class="module-icon">💳</span>
+        <div class="module-title">چک‌های دریافتی</div>
+        <div class="module-description">
+            ثبت و مدیریت چک‌های دریافتی از مشتریان
+        </div>
+        <div class="module-actions">
+            <a href="{% url 'accounting:cheque_receive_create' %}" class="action-btn success">
+                💳 ثبت چک دریافتی جدید
+            </a>
+            <a href="{% url 'accounting:cheque_receive_list' %}" class="action-btn secondary">
+                📋 مشاهده لیست چک‌ها
+            </a>
+        </div>
+    </div>
+
+    <!-- ماژول چک‌های پرداختی -->
+    <div class="module-card">
+        <span class="module-icon">💸</span>
+        <div class="module-title">چک‌های پرداختی</div>
+        <div class="module-description">
+            ثبت و مدیریت چک‌های پرداختی به تامین‌کنندگان
+        </div>
+        <div class="module-actions">
+            <a href="{% url 'accounting:cheque_pay_create' %}" class="action-btn warning">
+                💸 ثبت چک پرداختی جدید
+            </a>
+            <a href="{% url 'accounting:cheque_pay_list' %}" class="action-btn secondary">
+                📋 مشاهده لیست چک‌ها
+            </a>
+        </div>
+    </div>
+
+    <!-- ماژول گزارش‌گیری -->
+    <div class="module-card">
+        <span class="module-icon">📊</span>
+        <div class="module-title">گزارش‌گیری</div>
+        <div class="module-description">
+            گزارش‌های مالی، موجودی انبار و تحلیل عملکرد
+        </div>
+        <div class="module-actions">
+            <a href="{% url 'accounting:inventory_report' %}" class="action-btn info">
+                📦 گزارش موجودی انبار
+            </a>
+            <a href="{% url 'accounting:financial_report' %}" class="action-btn info">
+                💰 گزارش مالی
+            </a>
+        </div>
+    </div>
+
+    <!-- ماژول مدیریت -->
+    <div class="module-card">
+        <span class="module-icon">⚙️</span>
+        <div class="module-title">مدیریت سیستم</div>
+        <div class="module-description">
+            تنظیمات سیستم، مدیریت کاربران و پشتیبان‌گیری
+        </div>
+        <div class="module-actions">
+            <a href="#" class="action-btn secondary">
+                👥 مدیریت کاربران
+            </a>
+            <a href="#" class="action-btn secondary">
+                ⚙️ تنظیمات سیستم
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- اطلاعات سیستم -->
+<div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+    <p style="margin: 0; color: #666;">
+        <strong>سیستم حسابداری محک</strong> | نسخه 1.0 | 
+        آخرین به‌روزرسانی: {{ current_date|date:"Y/m/d" }}
+    </p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// اضافه کردن انیمیشن‌های ساده
+document.addEventListener('DOMContentLoaded', function() {
+    // انیمیشن برای کارت‌ها
+    const cards = document.querySelectorAll('.module-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+    
+    // انیمیشن برای آمار
+    const stats = document.querySelectorAll('.stat-number');
+    stats.forEach(stat => {
+        const finalValue = parseInt(stat.textContent) || 0;
+        let currentValue = 0;
+        const increment = finalValue / 50;
+        
+        const timer = setInterval(() => {
+            currentValue += increment;
+            if (currentValue >= finalValue) {
+                stat.textContent = finalValue;
+                clearInterval(timer);
+            } else {
+                stat.textContent = Math.floor(currentValue);
+            }
+        }, 50);
+    });
+});
+</script>
+{% endblock %} 

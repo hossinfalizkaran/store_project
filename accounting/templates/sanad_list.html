@@ -1,0 +1,293 @@
+{% extends 'base.html' %}
+
+{% block title %}لیست اسناد{% endblock %}
+
+{% block extra_css %}
+<style>
+    .controls {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    .control-group {
+        margin-bottom: 15px;
+    }
+    .control-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+    .search-box {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .search-input {
+        flex: 1;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    .search-btn {
+        padding: 8px 16px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    .search-btn:hover {
+        background: #0056b3;
+    }
+    .sort-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .sort-btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        text-decoration: none;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .sort-btn.active {
+        background: #28a745;
+    }
+    .sort-btn:not(.active) {
+        background: #6c757d;
+    }
+    .sort-btn:hover {
+        opacity: 0.8;
+    }
+    .sort-icon {
+        font-size: 12px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    th, td {
+        padding: 12px;
+        text-align: right;
+        border: 1px solid #ddd;
+    }
+    th {
+        background-color: #f8f9fa;
+        font-weight: bold;
+        cursor: pointer;
+        user-select: none;
+    }
+    th:hover {
+        background-color: #e9ecef;
+    }
+    th.sortable {
+        position: relative;
+    }
+    th.sortable::after {
+        content: '↕';
+        position: absolute;
+        left: 8px;
+        color: #6c757d;
+    }
+    th.sortable.asc::after {
+        content: '↑';
+        color: #28a745;
+    }
+    th.sortable.desc::after {
+        content: '↓';
+        color: #dc3545;
+    }
+    tr:hover {
+        background-color: #f5f5f5;
+    }
+    .pagination {
+        margin-top: 20px;
+        text-align: center;
+        direction: rtl;
+    }
+    .pagination a, .pagination span {
+        display: inline-block;
+        padding: 6px 10px;
+        margin: 0 2px;
+        background: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        font-size: 14px;
+        min-width: 20px;
+        text-align: center;
+    }
+    .pagination a:hover {
+        background: #0056b3;
+    }
+    .pagination .current {
+        background: #28a745;
+        font-weight: bold;
+    }
+    .pagination .disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+        color: #fff;
+    }
+    .results-info {
+        margin-bottom: 15px;
+        color: #6c757d;
+        font-size: 14px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>📄 لیست اسناد</h1>
+
+<div class="controls">
+    <!-- جستجو -->
+    <div class="control-group">
+        <label>🔍 جستجو:</label>
+        <form method="get" class="search-box">
+            <input type="text" name="search" value="{{ search_query }}" 
+                   placeholder="جستجو در شماره سند، شرح، نوع، وضعیت، تاریخ..." 
+                   class="search-input">
+            <button type="submit" class="search-btn">جستجو</button>
+            {% if search_query %}
+                <a href="?sort={{ sort }}&order={{ order }}&page_size={{ page_size }}" 
+                   class="search-btn" style="background: #dc3545;">پاک کردن</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="control-group">
+        <label>🔄 مرتب‌سازی:</label>
+        <div class="sort-controls">
+            <a href="?sort=date&order=asc&search={{ search_query }}&page_size={{ page_size }}" 
+               class="sort-btn {% if sort == 'date' and order == 'asc' %}active{% endif %}">
+                تاریخ ↑
+            </a>
+            <a href="?sort=date&order=desc&search={{ search_query }}&page_size={{ page_size }}" 
+               class="sort-btn {% if sort == 'date' and order == 'desc' %}active{% endif %}">
+                تاریخ ↓
+            </a>
+            <a href="?sort=number&order=asc&search={{ search_query }}&page_size={{ page_size }}" 
+               class="sort-btn {% if sort == 'number' and order == 'asc' %}active{% endif %}">
+                شماره ↑
+            </a>
+            <a href="?sort=number&order=desc&search={{ search_query }}&page_size={{ page_size }}" 
+               class="sort-btn {% if sort == 'number' and order == 'desc' %}active{% endif %}">
+                شماره ↓
+            </a>
+            <a href="?sort=type&order=asc&search={{ search_query }}&page_size={{ page_size }}" 
+               class="sort-btn {% if sort == 'type' and order == 'asc' %}active{% endif %}">
+                نوع ↑
+            </a>
+            <a href="?sort=type&order=desc&search={{ search_query }}&page_size={{ page_size }}" 
+               class="sort-btn {% if sort == 'type' and order == 'desc' %}active{% endif %}">
+                نوع ↓
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+{% if search_query %}
+<div class="results-info">
+    🔍 نتایج جستجو برای: <strong>"{{ search_query }}"</strong> 
+    ({{ total_count }} نتیجه یافت شد)
+</div>
+{% endif %}
+
+{% if sanads %}
+<table>
+    <thead>
+        <tr>
+            <th class="sortable {% if sort == 'number' %}{{ order }}{% endif %}" 
+                onclick="sortTable('number')">شماره سند</th>
+            <th class="sortable {% if sort == 'date' %}{{ order }}{% endif %}" 
+                onclick="sortTable('date')">تاریخ</th>
+            <th class="sortable {% if sort == 'type' %}{{ order }}{% endif %}" 
+                onclick="sortTable('type')">نوع</th>
+            <th>شرح</th>
+            <th>وضعیت</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for sanad in sanads %}
+        <tr>
+            <td>
+                {% if sanad.code %}
+                    <a href="{% url 'sanad_detail' sanad.code %}">{{ sanad.code }}</a>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>{{ sanad.tarikh|default:'' }}</td>
+            <td>{{ sanad.zamaem|default:'' }}</td>
+            <td>{{ sanad.sharh|default:'' }}</td>
+            <td>{{ sanad.status|default:'' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="pagination">
+    {% if sanads.has_previous %}
+        <a href="?page=1&sort={{ sort }}&order={{ order }}&search={{ search_query }}&page_size={{ page_size }}">اول</a>
+        <a href="?page={{ sanads.previous_page_number }}&sort={{ sort }}&order={{ order }}&search={{ search_query }}&page_size={{ page_size }}">قبلی</a>
+    {% endif %}
+
+    {% with ''|center:sanads.paginator.num_pages as range %}
+    {% for _ in range %}
+        {% with forloop.counter as page_num %}
+            {% if page_num >= sanads.number|add:'-10' and page_num <= sanads.number|add:'10' %}
+                {% if page_num == sanads.number %}
+                    <span class="current">{{ page_num }}</span>
+                {% else %}
+                    <a href="?page={{ page_num }}&sort={{ sort }}&order={{ order }}&search={{ search_query }}&page_size={{ page_size }}">{{ page_num }}</a>
+                {% endif %}
+            {% elif page_num == 1 or page_num == sanads.paginator.num_pages %}
+                <a href="?page={{ page_num }}&sort={{ sort }}&order={{ order }}&search={{ search_query }}&page_size={{ page_size }}">{{ page_num }}</a>
+            {% elif page_num == sanads.number|add:'-11' or page_num == sanads.number|add:'11' %}
+                <span class="disabled">...</span>
+            {% endif %}
+        {% endwith %}
+    {% endfor %}
+    {% endwith %}
+
+    {% if sanads.has_next %}
+        <a href="?page={{ sanads.next_page_number }}&sort={{ sort }}&order={{ order }}&search={{ search_query }}&page_size={{ page_size }}">بعدی</a>
+        <a href="?page={{ sanads.paginator.num_pages }}&sort={{ sort }}&order={{ order }}&search={{ search_query }}&page_size={{ page_size }}">آخر</a>
+    {% endif %}
+</div>
+{% else %}
+<p>هیچ سندی یافت نشد.</p>
+{% endif %}
+
+<script>
+function sortTable(column) {
+    const currentSort = '{{ sort }}';
+    const currentOrder = '{{ order }}';
+    let newOrder = 'asc';
+    
+    if (currentSort === column) {
+        newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+    }
+    
+    const url = new URL(window.location);
+    url.searchParams.set('sort', column);
+    url.searchParams.set('order', newOrder);
+    url.searchParams.set('page', '1'); // برگشت به صفحه اول
+    window.location.href = url.toString();
+}
+</script>
+{% endblock %} 

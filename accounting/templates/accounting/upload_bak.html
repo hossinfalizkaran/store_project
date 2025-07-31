@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .upload-container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        padding: 30px;
+    }
+    
+    .upload-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .upload-title {
+        font-size: 24px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 10px;
+    }
+    
+    .upload-subtitle {
+        color: #666;
+        font-size: 14px;
+    }
+    
+    .upload-form {
+        border: 2px dashed #007bff;
+        border-radius: 8px;
+        padding: 40px;
+        text-align: center;
+        margin-bottom: 20px;
+        background: #f8f9fa;
+    }
+    
+    .file-input {
+        display: none;
+    }
+    
+    .file-label {
+        display: inline-block;
+        padding: 12px 24px;
+        background: #007bff;
+        color: white;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.3s ease;
+    }
+    
+    .file-label:hover {
+        background: #0056b3;
+    }
+    
+    .file-info {
+        margin-top: 15px;
+        color: #666;
+        font-size: 14px;
+    }
+    
+    .btn-upload {
+        background: #28a745;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 16px;
+        margin-top: 20px;
+    }
+    
+    .btn-upload:hover {
+        background: #218838;
+    }
+    
+    .btn-upload:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+    }
+    
+    .alert {
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+    }
+    
+    .alert-success {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+    }
+    
+    .alert-danger {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+    }
+    
+    .upload-instructions {
+        background: #e8f5e8;
+        border: 1px solid #28a745;
+        border-radius: 6px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .instructions-title {
+        font-weight: bold;
+        color: #155724;
+        margin-bottom: 10px;
+    }
+    
+    .instructions-list {
+        color: #155724;
+        font-size: 14px;
+    }
+    
+    .instructions-list li {
+        margin-bottom: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="upload-container">
+    <div class="upload-header">
+        <div class="upload-title">📁 آپلود فایل پشتیبان</div>
+        <div class="upload-subtitle">انتخاب و آپلود فایل پشتیبان دیتابیس</div>
+    </div>
+    
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert {% if message.tags %}{{ message.tags }}{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="upload-instructions">
+        <div class="instructions-title">📋 دستورالعمل آپلود:</div>
+        <ul class="instructions-list">
+            <li>فقط فایل‌های با فرمت .bak قابل آپلود هستند</li>
+            <li>حداکثر حجم فایل: 100 مگابایت</li>
+            <li>فایل باید از سیستم محک تهیه شده باشد</li>
+            <li>قبل از آپلود، از فایل اصلی پشتیبان تهیه کنید</li>
+        </ul>
+    </div>
+    
+    <form method="post" enctype="multipart/form-data" id="upload-form">
+        {% csrf_token %}
+        <div class="upload-form">
+            <input type="file" id="bak_file" name="bak_file" class="file-input" accept=".bak" required>
+            <label for="bak_file" class="file-label">
+                📁 انتخاب فایل پشتیبان
+            </label>
+            <div class="file-info" id="file-info">
+                هیچ فایلی انتخاب نشده است
+            </div>
+        </div>
+        
+        <button type="submit" class="btn-upload" id="upload-btn" disabled>
+            ⬆️ آپلود فایل
+        </button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('bak_file');
+    const fileInfo = document.getElementById('file-info');
+    const uploadBtn = document.getElementById('upload-btn');
+    
+    fileInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            // بررسی نوع فایل
+            if (!file.name.toLowerCase().endsWith('.bak')) {
+                alert('فقط فایل‌های .bak قابل آپلود هستند');
+                this.value = '';
+                fileInfo.textContent = 'هیچ فایلی انتخاب نشده است';
+                uploadBtn.disabled = true;
+                return;
+            }
+            
+            // بررسی حجم فایل (100MB)
+            const maxSize = 100 * 1024 * 1024; // 100MB in bytes
+            if (file.size > maxSize) {
+                alert('حجم فایل نباید بیشتر از 100 مگابایت باشد');
+                this.value = '';
+                fileInfo.textContent = 'هیچ فایلی انتخاب نشده است';
+                uploadBtn.disabled = true;
+                return;
+            }
+            
+            // نمایش اطلاعات فایل
+            const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+            fileInfo.textContent = `فایل انتخاب شده: ${file.name} (${sizeInMB} MB)`;
+            uploadBtn.disabled = false;
+        } else {
+            fileInfo.textContent = 'هیچ فایلی انتخاب نشده است';
+            uploadBtn.disabled = true;
+        }
+    });
+    
+    // اعتبارسنجی فرم
+    document.getElementById('upload-form').addEventListener('submit', function(e) {
+        const file = fileInput.files[0];
+        if (!file) {
+            e.preventDefault();
+            alert('لطفاً فایلی انتخاب کنید');
+            return false;
+        }
+        
+        // نمایش پیام تأیید
+        if (!confirm('آیا از آپلود این فایل اطمینان دارید؟')) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // نمایش loading
+        uploadBtn.textContent = '⏳ در حال آپلود...';
+        uploadBtn.disabled = true;
+    });
+});
+</script>
+{% endblock %} 

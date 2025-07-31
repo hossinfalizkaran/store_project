@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+    <h1>جزئیات سند</h1>
+    
+    <!-- سربرگ سند -->
+    <div class="sanad-header">
+        <h2>📄 سربرگ سند</h2>
+        <table class="table table-bordered">
+            <tbody>
+                {% for key, value in sanad.items %}
+                <tr>
+                    <th style="width: 200px; text-align: right;">
+                        {% if key == 'code' %}کد{% elif key == 'tarikh' %}تاریخ{% elif key == 'zamaem' %}ضمایم{% elif key == 'sharh' %}شرح{% elif key == 'status' %}وضعیت{% elif key == 'Com_Index' %}ایندکس شرکت{% elif key == 'SanadID' %}شماره سند{% elif key == 'LastPrintDate' %}تاریخ آخرین چاپ{% elif key == 'UserCode' %}کد کاربر{% elif key == 'CreatedTime' %}زمان ایجاد{% elif key == 'CreatedDate' %}تاریخ ایجاد{% elif key == 'ModifiedTime' %}زمان ویرایش{% elif key == 'ModifiedDate' %}تاریخ ویرایش{% elif key == 'UserCreated' %}ایجادکننده{% elif key == 'UserModified' %}ویرایش‌کننده{% else %}{{ key }}{% endif %}
+                    </th>
+                    <td style="text-align: left; direction: ltr;">{{ value }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- جزئیات سند (آرتیکل‌ها) -->
+    {% if details %}
+    <div class="sanad-details">
+        <h2>📋 آرتیکل‌های سند</h2>
+        <table class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    <th>ردیف</th>
+                    <th>حساب کل</th>
+                    <th>حساب معین</th>
+                    <th>حساب تفصیلی</th>
+                    <th>حساب تفصیلی دوم</th>
+                    <th>بدهکار</th>
+                    <th>بستانکار</th>
+                    <th>شرح</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detail in details %}
+                <tr>
+                    <td>{{ detail.Radif|default:'' }}</td>
+                    <td>
+                        {{ detail.Kol|default:'' }} - {{ detail.total_title|default:'' }}
+                    </td>
+                    <td>
+                        {{ detail.Moin|default:'' }} - {{ detail.assistant_title|default:'' }}
+                    </td>
+                    <td>
+                        {{ detail.Tafzili|default:'' }} - {{ detail.tafzili_title|default:'' }}
+                    </td>
+                    <td>
+                        {{ detail.Tafzili2|default:'' }} - {{ detail.tafzili2_title|default:'' }}
+                    </td>
+                    <td class="text-left" style="direction: ltr;">
+                        {{ detail.Bed|default:0|floatformat:0 }}
+                    </td>
+                    <td class="text-left" style="direction: ltr;">
+                        {{ detail.Bes|default:0|floatformat:0 }}
+                    </td>
+                    <td>{{ detail.Sharh|default:'' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <h3>⚠️ هیچ آرتیکلی برای این سند یافت نشد</h3>
+        <p>احتمالاً این سند هنوز آرتیکل‌ای ندارد یا در جدول SanadDetail موجود نیست.</p>
+    </div>
+    {% endif %}
+    
+    <div class="actions">
+        <a href="{% url 'sanad_list' %}" class="btn btn-secondary">← بازگشت به لیست اسناد</a>
+    </div>
+</div>
+
+<style>
+    .sanad-header, .sanad-details {
+        margin-bottom: 30px;
+    }
+    
+    .sanad-header h2, .sanad-details h2 {
+        color: #333;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .table th {
+        background-color: #f8f9fa;
+        font-weight: bold;
+    }
+    
+    .text-left {
+        text-align: left !important;
+    }
+    
+    .actions {
+        margin-top: 20px;
+        text-align: center;
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: bold;
+        margin: 5px;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #545b62;
+        color: white;
+    }
+    
+    .alert {
+        padding: 15px;
+        border-radius: 5px;
+        margin: 20px 0;
+    }
+    
+    .alert-info {
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+    }
+</style>
+{% endblock %} 

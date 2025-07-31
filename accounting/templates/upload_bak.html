@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>آپلود فایل بک‌آپ (ZIP یا BAK)</title>
+</head>
+<body>
+    <h1>آپلود فایل بک‌آپ SQL Server</h1>
+    <p>می‌توانید فایل ZIP (مشابه نرم‌افزار محک) یا فایل BAK مستقیم آپلود کنید.</p>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" name="bakfile" accept=".zip,.bak" required>
+        <button type="submit">آپلود و بازیابی</button>
+    </form>
+    <div style="text-align: center; margin-top: 20px;">
+        <a href="{% url 'home' %}" class="btn" style="background-color: #9b59b6;">🏠 صفحه اصلی</a>
+    </div>
+</body>
+</html> 

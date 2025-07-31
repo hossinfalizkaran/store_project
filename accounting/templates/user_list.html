@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+    <h1>لیست کاربران دیتابیس</h1>
+    <table style="width:100%; border-collapse:collapse; background:#fff;">
+        <thead>
+            <tr style="background:#3498db; color:#fff;">
+                <th>کد</th>
+                <th>نام کاربری</th>
+                <th>نام کامل</th>
+                <th>موبایل</th>
+                <th>وضعیت</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.code }}</td>
+                <td>{{ user.name }}</td>
+                <td>{{ user.fullname|default:"-" }}</td>
+                <td>{{ user.mobile|default:"-" }}</td>
+                <td>{% if user.is_active %}<span style="color:green;">فعال</span>{% else %}<span style="color:red;">غیرفعال</span>{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="text-align:center;">هیچ کاربری یافت نشد.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %} 

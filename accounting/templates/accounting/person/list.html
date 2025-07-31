@@ -1,0 +1,491 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .person-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    .search-section {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .search-input {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        min-width: 200px;
+    }
+    
+    .filter-select {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        min-width: 150px;
+    }
+    
+    .btn-create {
+        background: #28a745;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: bold;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-create:hover {
+        background: #218838;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .person-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .person-table th {
+        background: #f8f9fa;
+        padding: 12px;
+        text-align: right;
+        font-weight: bold;
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .person-table td {
+        padding: 12px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .person-table tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    
+    .status-active {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .status-inactive {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .amount-cell {
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 5px;
+        flex-wrap: wrap;
+    }
+    
+    .btn-action {
+        padding: 4px 8px;
+        border: none;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    
+    .btn-view {
+        background: #17a2b8;
+        color: white;
+    }
+    
+    .btn-edit {
+        background: #ffc107;
+        color: #212529;
+    }
+    
+    .btn-delete {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+        gap: 10px;
+    }
+    
+    .pagination a {
+        padding: 8px 12px;
+        border: 1px solid #dee2e6;
+        text-decoration: none;
+        color: #007bff;
+        border-radius: 4px;
+    }
+    
+    .pagination a:hover {
+        background: #007bff;
+        color: white;
+    }
+    
+    .pagination .current {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+    
+    .empty-state-icon {
+        font-size: 48px;
+        margin-bottom: 15px;
+        opacity: 0.5;
+    }
+    
+    .stats-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 24px;
+        font-weight: bold;
+        color: #007bff;
+        display: block;
+    }
+    
+    .stat-label {
+        color: #666;
+        font-size: 14px;
+    }
+    
+    .settings-btn {
+        background: #6c757d;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .settings-btn:hover {
+        background: #5a6268;
+        color: white;
+        text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2>👥 {{ title }}</h2>
+
+<!-- آمار کلی -->
+<div class="stats-cards">
+    <div class="stat-card">
+        <span class="stat-number">{{ object_list.paginator.count|default:0 }}</span>
+        <span class="stat-label">کل اشخاص</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ object_list|length }}</span>
+        <span class="stat-label">نمایش داده شده</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ settings.page_size }}</span>
+        <span class="stat-label">آیتم در صفحه</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ settings.sort_key }}</span>
+        <span class="stat-label">مرتب‌سازی بر اساس</span>
+    </div>
+</div>
+
+<!-- هدر با جستجو و فیلتر -->
+<div class="person-header">
+    <div class="search-section">
+        <input type="text" id="search-input" class="search-input" placeholder="جستجو در اشخاص...">
+        <select id="status-filter" class="filter-select">
+            <option value="">همه وضعیت‌ها</option>
+            <option value="1">فعال</option>
+            <option value="0">غیرفعال</option>
+        </select>
+        <select id="sort-filter" class="filter-select">
+            <option value="">مرتب‌سازی</option>
+            <option value="code">کد</option>
+            <option value="name">نام</option>
+            <option value="lname">نام خانوادگی</option>
+            <option value="credit">اعتبار</option>
+        </select>
+    </div>
+    
+    <div style="display: flex; gap: 10px;">
+        <a href="{% url 'person_settings' %}" class="settings-btn">
+            <span>⚙️</span>
+            <span>تنظیمات نمایش</span>
+        </a>
+        <a href="#" class="btn-create">
+            <span>➕</span>
+            <span>افزودن شخص جدید</span>
+        </a>
+    </div>
+</div>
+
+<!-- جدول اشخاص -->
+{% if object_list %}
+<div style="overflow-x: auto;">
+    <table class="person-table">
+        <thead>
+            <tr>
+                {% for column in visible_columns %}
+                <th>{{ column|title }}</th>
+                {% endfor %}
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for person in object_list %}
+            <tr>
+                {% for column in visible_columns %}
+                <td>
+                    {% if column == 'status' %}
+                        {% if person.status == 1 %}
+                            <span class="status-badge status-active">فعال</span>
+                        {% else %}
+                            <span class="status-badge status-inactive">غیرفعال</span>
+                        {% endif %}
+                    {% elif column == 'code' %}
+                        {{ person.code }}
+                    {% elif column == 'name' %}
+                        {{ person.name }}
+                    {% elif column == 'lname' %}
+                        {{ person.lname }}
+                    {% elif column == 'tel1' %}
+                        {{ person.tel1 }}
+                    {% elif column == 'mobile' %}
+                        {{ person.mobile }}
+                    {% elif column == 'address' %}
+                        {{ person.address }}
+                    {% elif column == 'credit' %}
+                        <span class="amount-cell">{{ person.credit|floatformat:0 }}</span>
+                    {% else %}
+                        {{ person.code }}
+                    {% endif %}
+                </td>
+                {% endfor %}
+                <td>
+                    <div class="action-buttons">
+                        <a href="#" class="btn-action btn-view" onclick="viewPerson({{ person.code }})">
+                            👁️ مشاهده
+                        </a>
+                        <a href="#" class="btn-action btn-edit" onclick="editPerson({{ person.code }})">
+                            ✏️ ویرایش
+                        </a>
+                        <a href="#" class="btn-action btn-delete" onclick="deletePerson({{ person.code }})">
+                            🗑️ حذف
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- صفحه‌بندی -->
+{% if object_list.has_other_pages %}
+<div class="pagination">
+    {% if object_list.has_previous %}
+        <a href="?page=1">&laquo; اولین</a>
+        <a href="?page={{ object_list.previous_page_number }}">قبلی</a>
+    {% endif %}
+    
+    <span class="current">
+        صفحه {{ object_list.number }} از {{ object_list.paginator.num_pages }}
+    </span>
+    
+    {% if object_list.has_next %}
+        <a href="?page={{ object_list.next_page_number }}">بعدی</a>
+        <a href="?page={{ object_list.paginator.num_pages }}">آخرین &raquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<!-- حالت خالی -->
+<div class="empty-state">
+    <div class="empty-state-icon">👥</div>
+    <h3>شخصی یافت نشد</h3>
+    <p>هنوز هیچ شخصی ثبت نشده است.</p>
+    <a href="#" class="btn-create">
+        <span>➕</span>
+        <span>افزودن اولین شخص</span>
+    </a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// جستجو و فیلتر
+document.getElementById('search-input').addEventListener('input', function() {
+    filterTable();
+});
+
+document.getElementById('status-filter').addEventListener('change', function() {
+    filterTable();
+});
+
+document.getElementById('sort-filter').addEventListener('change', function() {
+    const sortValue = this.value;
+    if (sortValue) {
+        // ارسال درخواست برای تغییر مرتب‌سازی
+        updateSorting(sortValue);
+    }
+});
+
+function filterTable() {
+    const searchTerm = document.getElementById('search-input').value.toLowerCase();
+    const statusFilter = document.getElementById('status-filter').value;
+    
+    const rows = document.querySelectorAll('.person-table tbody tr');
+    
+    rows.forEach(row => {
+        let show = true;
+        
+        // جستجو
+        const text = row.textContent.toLowerCase();
+        if (searchTerm && !text.includes(searchTerm)) {
+            show = false;
+        }
+        
+        // فیلتر وضعیت
+        if (statusFilter) {
+            const statusCell = row.querySelector('.status-badge');
+            if (statusCell) {
+                const status = statusCell.textContent.trim();
+                if (statusFilter === '1' && status !== 'فعال') show = false;
+                if (statusFilter === '0' && status !== 'غیرفعال') show = false;
+            }
+        }
+        
+        row.style.display = show ? '' : 'none';
+    });
+}
+
+// تغییر مرتب‌سازی
+function updateSorting(sortKey) {
+            fetch('{% url "person_settings" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            sort_key: sortKey
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('خطا در تغییر مرتب‌سازی: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('خطا در ارتباط با سرور');
+    });
+}
+
+// مشاهده شخص
+function viewPerson(personCode) {
+    window.location.href = `/accounting/person/${personCode}/`;
+}
+
+// ویرایش شخص
+function editPerson(personCode) {
+    window.location.href = `/accounting/person/${personCode}/edit/`;
+}
+
+// حذف شخص
+function deletePerson(personCode) {
+    if (confirm('آیا از حذف شخص کد ' + personCode + ' اطمینان دارید؟')) {
+        fetch(`/accounting/person/${personCode}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('خطا در حذف شخص: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('خطا در ارتباط با سرور');
+        });
+    }
+}
+
+// دریافت CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %} 

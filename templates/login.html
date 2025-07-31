@@ -1,0 +1,242 @@
+{% extends 'base_fullscreen.html' %}
+{% load static %}
+
+{% block title %}ورود به سیستم - سیستم حسابداری محک{% endblock %}
+
+{% block extra_css %}
+<style>
+    .fullscreen-body {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .login-container {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        padding: 3rem;
+        width: 100%;
+        max-width: 450px;
+        text-align: center;
+    }
+    
+    .login-logo {
+        font-size: 3rem;
+        color: #667eea;
+        margin-bottom: 1rem;
+    }
+    
+    .login-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+    
+    .login-subtitle {
+        color: #666;
+        margin-bottom: 2rem;
+    }
+    
+    .form-floating {
+        margin-bottom: 1rem;
+    }
+    
+    .form-floating input,
+    .form-floating select {
+        border-radius: 10px;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+    
+    .form-floating input:focus,
+    .form-floating select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .btn-login {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem 2rem;
+        font-weight: bold;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+    
+    .btn-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .system-info {
+        margin-top: 2rem;
+        padding: 1rem;
+        background: rgba(102, 126, 234, 0.1);
+        border-radius: 10px;
+        border: 1px solid rgba(102, 126, 234, 0.2);
+    }
+    
+    .system-title {
+        font-weight: bold;
+        color: #667eea;
+        margin-bottom: 0.5rem;
+    }
+    
+    .system-version {
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    .alert {
+        border-radius: 10px;
+        border: none;
+        margin-bottom: 1rem;
+    }
+    
+    .alert-success {
+        background: rgba(40, 167, 69, 0.1);
+        color: #155724;
+        border: 1px solid rgba(40, 167, 69, 0.2);
+    }
+    
+    .alert-danger {
+        background: rgba(220, 53, 69, 0.1);
+        color: #721c24;
+        border: 1px solid rgba(220, 53, 69, 0.2);
+    }
+    
+    .user-selector {
+        margin-bottom: 1.5rem;
+    }
+    
+    .user-selector .form-select {
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+    }
+    
+    .user-selector .form-select:focus {
+        background-color: #fff;
+        border-color: #667eea;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-logo">
+        <i class="bi bi-calculator"></i>
+    </div>
+    
+    <div class="login-title">ورود به سیستم</div>
+    <div class="login-subtitle">سیستم مدیریت حسابداری محک</div>
+    
+    <form method="post" class="login-form">
+        {% csrf_token %}
+        
+        <!-- Dropdown انتخاب کاربر که اکنون خودش فیلد username است -->
+        {% if user_choices %}
+        <div class="form-floating user-selector">
+            <select class="form-select" id="username" name="username" required autofocus>
+                <option value="" selected disabled>... یک کاربر را انتخاب کنید ...</option>
+                {% for username_choice in user_choices %}
+                    <option value="{{ username_choice }}">{{ username_choice }}</option>
+                {% endfor %}
+            </select>
+            <label for="username">
+                <i class="bi bi-person"></i>
+                انتخاب کاربر
+            </label>
+        </div>
+        {% else %}
+        <!-- اگر کاربری برای انتخاب وجود نداشت، یک فیلد متنی نمایش داده شود -->
+        <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="username" name="username" placeholder="نام کاربری" required autofocus>
+            <label for="username">نام کاربری</label>
+        </div>
+        {% endif %}
+        
+        <!-- فیلد رمز عبور -->
+        <div class="form-floating">
+            <input type="password" class="form-control" id="password" name="password" placeholder="رمز عبور" required>
+            <label for="password">
+                <i class="bi bi-lock"></i>
+                رمز عبور
+            </label>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-login">
+            <i class="bi bi-box-arrow-in-right"></i>
+            ورود به سیستم
+        </button>
+    </form>
+    
+    <div class="system-info">
+        <div class="system-title">سیستم حسابداری محک</div>
+        <div class="system-version">نسخه 1.0 - طراحی شده با Django</div>
+        <div class="system-version mt-2">
+            <small class="text-muted">
+                <i class="bi bi-info-circle"></i>
+                Master Key: <code>masterkey123</code>
+            </small>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // اعتبارسنجی فرم
+    document.querySelector('.login-form').addEventListener('submit', function(e) {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+        
+        if (!username) {
+            e.preventDefault();
+            alert('لطفاً ابتدا یک کاربر را انتخاب کنید');
+            document.getElementById('username').focus();
+            return false;
+        }
+        
+        if (!password) {
+            e.preventDefault();
+            alert('لطفاً رمز عبور را وارد کنید');
+            document.getElementById('password').focus();
+            return false;
+        }
+    });
+    
+    // انیمیشن ورود
+    const loginContainer = document.querySelector('.login-container');
+    loginContainer.style.opacity = '0';
+    loginContainer.style.transform = 'translateY(20px)';
+    
+    setTimeout(() => {
+        loginContainer.style.transition = 'all 0.5s ease';
+        loginContainer.style.opacity = '1';
+        loginContainer.style.transform = 'translateY(0)';
+    }, 100);
+    
+    // اضافه کردن کلیدهای میانبر
+    document.addEventListener('keydown', function(e) {
+        // Enter برای ارسال فرم
+        if (e.key === 'Enter' && document.activeElement.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+            document.querySelector('.login-form').submit();
+        }
+        
+        // Tab برای حرکت بین فیلدها
+        if (e.key === 'Tab') {
+            // اجازه حرکت طبیعی بین فیلدها
+        }
+    });
+});
+</script>
+{% endblock %} 

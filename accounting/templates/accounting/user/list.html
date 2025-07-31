@@ -1,0 +1,469 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .user-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    .search-section {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .search-input {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        min-width: 200px;
+    }
+    
+    .filter-select {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        min-width: 150px;
+    }
+    
+    .btn-create {
+        background: #28a745;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: bold;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-create:hover {
+        background: #218838;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .user-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .user-table th {
+        background: #f8f9fa;
+        padding: 12px;
+        text-align: right;
+        font-weight: bold;
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .user-table td {
+        padding: 12px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .user-table tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    
+    .status-active {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .status-inactive {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 5px;
+        flex-wrap: wrap;
+    }
+    
+    .btn-action {
+        padding: 4px 8px;
+        border: none;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    
+    .btn-view {
+        background: #17a2b8;
+        color: white;
+    }
+    
+    .btn-edit {
+        background: #ffc107;
+        color: #212529;
+    }
+    
+    .btn-delete {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .btn-reset {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+        gap: 10px;
+    }
+    
+    .pagination a {
+        padding: 8px 12px;
+        border: 1px solid #dee2e6;
+        text-decoration: none;
+        color: #007bff;
+        border-radius: 4px;
+    }
+    
+    .pagination a:hover {
+        background: #007bff;
+        color: white;
+    }
+    
+    .pagination .current {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+    
+    .empty-state-icon {
+        font-size: 48px;
+        margin-bottom: 15px;
+        opacity: 0.5;
+    }
+    
+    .stats-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 24px;
+        font-weight: bold;
+        color: #007bff;
+        display: block;
+    }
+    
+    .stat-label {
+        color: #666;
+        font-size: 14px;
+    }
+    
+    .password-info {
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        color: #666;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2>👥 {{ title }}</h2>
+
+<!-- آمار کلی -->
+<div class="stats-cards">
+    <div class="stat-card">
+        <span class="stat-number">{{ users.count|default:0 }}</span>
+        <span class="stat-label">کل کاربران</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ users|length }}</span>
+        <span class="stat-label">نمایش داده شده</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ users|slice:":5"|length }}</span>
+        <span class="stat-label">آخرین 5 کاربر</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">امروز</span>
+        <span class="stat-label">تاریخ</span>
+    </div>
+</div>
+
+<!-- هدر با جستجو و فیلتر -->
+<div class="user-header">
+    <div class="search-section">
+        <input type="text" id="search-input" class="search-input" placeholder="جستجو در کاربران...">
+        <select id="status-filter" class="filter-select">
+            <option value="">همه وضعیت‌ها</option>
+            <option value="1">فعال</option>
+            <option value="0">غیرفعال</option>
+        </select>
+    </div>
+    
+    <div style="display: flex; gap: 10px;">
+        <a href="{% url 'debug_passwords' %}" class="btn-create" style="background: #17a2b8;">
+            <span>🔍</span>
+            <span>دیباگ رمزها</span>
+        </a>
+        <a href="{% url 'test_password_formats' %}" class="btn-create" style="background: #ffc107; color: #212529;">
+            <span>🧪</span>
+            <span>تست فرمت‌ها</span>
+        </a>
+        <a href="{% url 'export_users' %}" class="btn-create" style="background: #6c757d;">
+            <span>📥</span>
+            <span>صادر کردن</span>
+        </a>
+        <a href="#" class="btn-create">
+            <span>➕</span>
+            <span>افزودن کاربر</span>
+        </a>
+    </div>
+</div>
+
+<!-- جدول کاربران -->
+{% if users %}
+<div style="overflow-x: auto;">
+    <table class="user-table">
+        <thead>
+            <tr>
+                <th>کد</th>
+                <th>نام کاربری</th>
+                <th>نام</th>
+                <th>نام خانوادگی</th>
+                <th>ایمیل</th>
+                <th>وضعیت</th>
+                <th>رمز عبور</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>
+                    <strong>#{{ user.code }}</strong>
+                </td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.name|default:"-" }}</td>
+                <td>{{ user.lname|default:"-" }}</td>
+                <td>{{ user.email|default:"-" }}</td>
+                <td>
+                    {% if user.status %}
+                        <span class="status-badge status-active">فعال</span>
+                    {% else %}
+                        <span class="status-badge status-inactive">غیرفعال</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="password-info">
+                        {{ user.password|truncatechars:20 }}
+                    </div>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <a href="#" class="btn-action btn-view" onclick="viewUser({{ user.code }})">
+                            👁️ مشاهده
+                        </a>
+                        <a href="#" class="btn-action btn-edit" onclick="editUser({{ user.code }})">
+                            ✏️ ویرایش
+                        </a>
+                        <a href="#" class="btn-action btn-reset" onclick="resetPassword({{ user.code }})">
+                            🔄 بازنشانی رمز
+                        </a>
+                        <a href="#" class="btn-action btn-delete" onclick="deleteUser({{ user.code }})">
+                            🗑️ حذف
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- صفحه‌بندی -->
+{% if users.has_other_pages %}
+<div class="pagination">
+    {% if users.has_previous %}
+        <a href="?page=1">&laquo; اولین</a>
+        <a href="?page={{ users.previous_page_number }}">قبلی</a>
+    {% endif %}
+    
+    <span class="current">
+        صفحه {{ users.number }} از {{ users.paginator.num_pages }}
+    </span>
+    
+    {% if users.has_next %}
+        <a href="?page={{ users.next_page_number }}">بعدی</a>
+        <a href="?page={{ users.paginator.num_pages }}">آخرین &raquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<!-- حالت خالی -->
+<div class="empty-state">
+    <div class="empty-state-icon">👥</div>
+    <h3>کاربری یافت نشد</h3>
+    <p>هنوز هیچ کاربری ثبت نشده است.</p>
+    <a href="#" class="btn-create">
+        <span>➕</span>
+        <span>افزودن اولین کاربر</span>
+    </a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// جستجو و فیلتر
+document.getElementById('search-input').addEventListener('input', function() {
+    filterTable();
+});
+
+document.getElementById('status-filter').addEventListener('change', function() {
+    filterTable();
+});
+
+function filterTable() {
+    const searchTerm = document.getElementById('search-input').value.toLowerCase();
+    const statusFilter = document.getElementById('status-filter').value;
+    
+    const rows = document.querySelectorAll('.user-table tbody tr');
+    
+    rows.forEach(row => {
+        let show = true;
+        
+        // جستجو
+        const text = row.textContent.toLowerCase();
+        if (searchTerm && !text.includes(searchTerm)) {
+            show = false;
+        }
+        
+        // فیلتر وضعیت
+        if (statusFilter) {
+            const statusCell = row.querySelector('.status-badge');
+            if (statusCell) {
+                const status = statusCell.textContent.trim();
+                if (statusFilter === '1' && status !== 'فعال') show = false;
+                if (statusFilter === '0' && status !== 'غیرفعال') show = false;
+            }
+        }
+        
+        row.style.display = show ? '' : 'none';
+    });
+}
+
+// مشاهده کاربر
+function viewUser(userCode) {
+    window.location.href = `/accounting/user/${userCode}/`;
+}
+
+// ویرایش کاربر
+function editUser(userCode) {
+    window.location.href = `/accounting/user/${userCode}/edit/`;
+}
+
+// بازنشانی رمز عبور
+function resetPassword(userCode) {
+    if (confirm('آیا می‌خواهید رمز عبور کاربر کد ' + userCode + ' را بازنشانی کنید؟')) {
+        fetch(`/accounting/user/${userCode}/reset-password/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('رمز عبور با موفقیت بازنشانی شد: ' + data.new_password);
+                location.reload();
+            } else {
+                alert('خطا در بازنشانی رمز عبور: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('خطا در ارتباط با سرور');
+        });
+    }
+}
+
+// حذف کاربر
+function deleteUser(userCode) {
+    if (confirm('آیا از حذف کاربر کد ' + userCode + ' اطمینان دارید؟')) {
+        fetch(`/accounting/user/${userCode}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('خطا در حذف کاربر: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('خطا در ارتباط با سرور');
+        });
+    }
+}
+
+// دریافت CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %} 

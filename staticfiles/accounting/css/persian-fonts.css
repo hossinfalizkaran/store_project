@@ -1,0 +1,75 @@
+/* Persian Fonts CSS - Uniform Arabic/Persian Character Display */
+@font-face {
+    font-family: 'Vazir';
+    src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir.woff2') format('woff2'),
+         url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir.woff') format('woff'),
+         url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Vazir';
+    src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir-Bold.woff2') format('woff2'),
+         url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir-Bold.woff') format('woff'),
+         url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir-Bold.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Apply Persian font to all elements */
+* {
+    font-family: 'Vazir', 'Tahoma', 'Arial', 'Segoe UI', sans-serif;
+}
+
+body {
+    font-family: 'Vazir', 'Tahoma', 'Arial', 'Segoe UI', sans-serif;
+    font-feature-settings: "ss01", "ss02", "ss03", "ss04", "ss05", "ss06", "ss07", "ss08", "ss09", "ss10", "ss11", "ss12", "ss13", "ss14", "ss15", "ss16", "ss17", "ss18", "ss19", "ss20", "ss21", "ss22", "ss23", "ss24", "ss25", "ss26", "ss27", "ss28", "ss29", "ss30", "ss31", "ss32", "ss33", "ss34", "ss35", "ss36", "ss37", "ss38", "ss39", "ss40", "ss41", "ss42", "ss43", "ss44", "ss45", "ss46", "ss47", "ss48", "ss49", "ss50", "ss51", "ss52", "ss53", "ss54", "ss55", "ss56", "ss57", "ss58", "ss59", "ss60", "ss61", "ss62", "ss63", "ss64", "ss65", "ss66", "ss67", "ss68", "ss69", "ss70", "ss71", "ss72", "ss73", "ss74", "ss75", "ss76", "ss77", "ss78", "ss79", "ss80", "ss81", "ss82", "ss83", "ss84", "ss85", "ss86", "ss87", "ss88", "ss89", "ss90", "ss91", "ss92", "ss93", "ss94", "ss95", "ss96", "ss97", "ss98", "ss99", "ss100";
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure proper text direction and alignment */
+[dir="rtl"] {
+    text-align: right;
+}
+
+[dir="ltr"] {
+    text-align: left;
+}
+
+/* Improve readability for Persian text */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Vazir', 'Tahoma', 'Arial', 'Segoe UI', sans-serif;
+    font-weight: bold;
+    line-height: 1.4;
+}
+
+p, span, div, td, th, input, textarea, select, button {
+    font-family: 'Vazir', 'Tahoma', 'Arial', 'Segoe UI', sans-serif;
+    line-height: 1.6;
+}
+
+/* Character normalization for search compatibility */
+/* Normalize Arabic/Persian characters to display uniformly */
+.search-normalize {
+    font-feature-settings: "ss01" 1, "ss02" 1, "ss03" 1, "ss04" 1, "ss05" 1, "ss06" 1, "ss07" 1, "ss08" 1, "ss09" 1, "ss10" 1;
+}
+
+/* Force uniform character display */
+input[type="text"], 
+input[type="search"], 
+textarea, 
+select {
+    font-family: 'Vazir', 'Tahoma', 'Arial', 'Segoe UI', sans-serif !important;
+    font-feature-settings: "ss01" 1, "ss02" 1, "ss03" 1, "ss04" 1, "ss05" 1, "ss06" 1, "ss07" 1, "ss08" 1, "ss09" 1, "ss10" 1;
+}
+
+/* Table cells should also use uniform character display */
+td, th {
+    font-family: 'Vazir', 'Tahoma', 'Arial', 'Segoe UI', sans-serif !important;
+    font-feature-settings: "ss01" 1, "ss02" 1, "ss03" 1, "ss04" 1, "ss05" 1, "ss06" 1, "ss07" 1, "ss08" 1, "ss09" 1, "ss10" 1;
+} 

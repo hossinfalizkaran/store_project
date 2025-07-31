@@ -1,0 +1,424 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}لینک‌های توسعه - سیستم حسابداری محک{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dev-header {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 20px 20px;
+    }
+    
+    .dev-title {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .dev-subtitle {
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+    
+    .link-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .link-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        border-color: #28a745;
+    }
+    
+    .link-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: #28a745;
+    }
+    
+    .link-title {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+    
+    .link-url {
+        color: #666;
+        font-family: monospace;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        background: #f8f9fa;
+        padding: 0.5rem;
+        border-radius: 5px;
+    }
+    
+    .link-description {
+        color: #666;
+        margin-bottom: 1rem;
+    }
+    
+    .btn-dev {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+    }
+    
+    .btn-dev:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .category-title {
+        color: #28a745;
+        font-weight: bold;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #28a745;
+    }
+    
+    .status-badge {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 15px;
+        font-weight: bold;
+    }
+    
+    .status-implemented {
+        background: rgba(40, 167, 69, 0.1);
+        color: #155724;
+        border: 1px solid rgba(40, 167, 69, 0.2);
+    }
+    
+    .status-pending {
+        background: rgba(255, 193, 7, 0.1);
+        color: #856404;
+        border: 1px solid rgba(255, 193, 7, 0.2);
+    }
+    
+    .status-not-implemented {
+        background: rgba(220, 53, 69, 0.1);
+        color: #721c24;
+        border: 1px solid rgba(220, 53, 69, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Development Header -->
+<div class="dev-header">
+    <div class="container">
+        <h1 class="dev-title">
+            <i class="bi bi-gear"></i>
+            لینک‌های توسعه
+        </h1>
+        <p class="dev-subtitle">
+            این صفحه برای تست سریع تمام URL های سیستم در حین توسعه استفاده می‌شود
+        </p>
+    </div>
+</div>
+
+<!-- Authentication Links -->
+<div class="container">
+    <h3 class="category-title">
+        <i class="bi bi-shield-lock"></i>
+        احراز هویت
+    </h3>
+    <div class="row">
+        <div class="col-md-6 col-lg-4">
+            <div class="link-card">
+                <div class="link-icon">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                </div>
+                <div class="link-title">ورود به سیستم</div>
+                <div class="link-url">/login/</div>
+                <div class="link-description">صفحه ورود به سیستم</div>
+                <span class="status-badge status-implemented">پیاده‌سازی شده</span>
+                <a href="{% url 'login' %}" class="btn btn-success btn-dev">
+                    <i class="bi bi-arrow-left"></i>
+                    تست
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-4">
+            <div class="link-card">
+                <div class="link-icon">
+                    <i class="bi bi-box-arrow-right"></i>
+                </div>
+                <div class="link-title">خروج از سیستم</div>
+                <div class="link-url">/logout/</div>
+                <div class="link-description">خروج از سیستم و پاک کردن session</div>
+                <span class="status-badge status-implemented">پیاده‌سازی شده</span>
+                <a href="{% url 'logout' %}" class="btn btn-success btn-dev">
+                    <i class="bi bi-arrow-left"></i>
+                    تست
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Pages -->
+<div class="container mt-4">
+    <h3 class="category-title">
+        <i class="bi bi-house"></i>
+        صفحات اصلی
+    </h3>
+    <div class="row">
+        <div class="col-md-6 col-lg-4">
+            <div class="link-card">
+                <div class="link-icon">
+                    <i class="bi bi-speedometer2"></i>
+                </div>
+                <div class="link-title">صفحه اصلی</div>
+                <div class="link-url">/</div>
+                <div class="link-description">داشبورد اصلی سیستم</div>
+                <span class="status-badge status-implemented">پیاده‌سازی شده</span>
+                <a href="{% url 'home' %}" class="btn btn-success btn-dev">
+                    <i class="bi bi-arrow-left"></i>
+                    تست
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-4">
+            <div class="link-card">
+                <div class="link-icon">
+                    <i class="bi bi-file-text"></i>
+                </div>
+                <div class="link-title">اسناد حسابداری</div>
+                <div class="link-url">/sanads/</div>
+                <div class="link-description">لیست تمام اسناد حسابداری</div>
+                <span class="status-badge status-implemented">پیاده‌سازی شده</span>
+                <a href="{% url 'sanad_list' %}" class="btn btn-success btn-dev">
+                    <i class="bi bi-arrow-left"></i>
+                    تست
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-4">
+            <div class="link-card">
+                <div class="link-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div class="link-title">لیست اشخاص</div>
+                <div class="link-url">/persons/</div>
+                <div class="link-description">مدیریت اشخاص و مشتریان</div>
+                <span class="status-badge status-implemented">پیاده‌سازی شده</span>
+                <a href="{% url 'person_list' %}" class="btn btn-success btn-dev">
+                    <i class="bi bi-arrow-left"></i>
+                    تست
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Management -->
+<div class="container mt-4">
+    <h3 class="category-title">
+        <i class="bi bi-gear"></i>
+        مدیریت سیستم
+    </h3>
+    <div class="row">
+        <div class="col-md-6 col-lg-4">
+            <div class="link-card">
+                <div class="link-icon">
+                    <i class="bi bi-download"></i>
+                </div>
+                <div class="link-title">پشتیبان‌گیری</div>
+                <div class="link-url">/backup/</div>
+                <div class="link-description">ایجاد پشتیبان از دیتابیس</div>
+                <span class="status-badge status-implemented">پیاده‌سازی شده</span>
+                <a href="{% url 'backup_db' %}" class="btn btn-success btn-dev">
+                    <i class="bi bi-arrow-left"></i>
+                    تست
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-4">
+            <div class="link-card">
+                <div class="link-icon">
+                    <i class="bi bi-upload"></i>
+                </div>
+                <div class="link-title">بازیابی اطلاعات</div>
+                <div class="link-url">/restore/</div>
+                <div class="link-description">بازیابی از فایل پشتیبان</div>
+                <span class="status-badge status-implemented">پیاده‌سازی شده</span>
+                <a href="{% url 'upload_bak' %}" class="btn btn-success btn-dev">
+                    <i class="bi bi-arrow-left"></i>
+                    تست
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-4">
+            <div class="link-card">
+                <div class="link-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div class="link-title">مدیریت کاربران</div>
+                <div class="link-url">/users/</div>
+                <div class="link-description">لیست و مدیریت کاربران سیستم</div>
+                <span class="status-badge status-implemented">پیاده‌سازی شده</span>
+                <a href="{% url 'user_list' %}" class="btn btn-success btn-dev">
+                    <i class="bi bi-arrow-left"></i>
+                    تست
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Development Tools -->
+<div class="container mt-4">
+    <h3 class="category-title">
+        <i class="bi bi-tools"></i>
+        ابزارهای توسعه
+    </h3>
+    <div class="row">
+        <div class="col-md-6 col-lg-4">
+            <div class="link-card">
+                <div class="link-icon">
+                    <i class="bi bi-bug"></i>
+                </div>
+                <div class="link-title">دیباگ رمزهای عبور</div>
+                <div class="link-url">/debug-passwords/</div>
+                <div class="link-description">بررسی و دیباگ رمزهای عبور</div>
+                <span class="status-badge status-implemented">پیاده‌سازی شده</span>
+                <a href="{% url 'debug_passwords' %}" class="btn btn-success btn-dev">
+                    <i class="bi bi-arrow-left"></i>
+                    تست
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-4">
+            <div class="link-card">
+                <div class="link-icon">
+                    <i class="bi bi-file-earmark-text"></i>
+                </div>
+                <div class="link-title">تست فرمت‌های رمز</div>
+                <div class="link-url">/test-passwords/</div>
+                <div class="link-description">تست فرمت‌های مختلف رمز عبور</div>
+                <span class="status-badge status-implemented">پیاده‌سازی شده</span>
+                <a href="{% url 'test_password_formats' %}" class="btn btn-success btn-dev">
+                    <i class="bi bi-arrow-left"></i>
+                    تست
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-4">
+            <div class="link-card">
+                <div class="link-icon">
+                    <i class="bi bi-file-earmark-excel"></i>
+                </div>
+                <div class="link-title">صادر کردن کاربران</div>
+                <div class="link-url">/export-users/</div>
+                <div class="link-description">صادر کردن لیست کاربران به Excel</div>
+                <span class="status-badge status-implemented">پیاده‌سازی شده</span>
+                <a href="{% url 'export_users' %}" class="btn btn-success btn-dev">
+                    <i class="bi bi-arrow-left"></i>
+                    تست
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Future Features -->
+<div class="container mt-4">
+    <h3 class="category-title">
+        <i class="bi bi-clock"></i>
+        ویژگی‌های آینده
+    </h3>
+    <div class="row">
+        <div class="col-md-6 col-lg-4">
+            <div class="link-card">
+                <div class="link-icon">
+                    <i class="bi bi-box"></i>
+                </div>
+                <div class="link-title">لیست کالاها</div>
+                <div class="link-url">/goods/</div>
+                <div class="link-description">مدیریت کالاها و موجودی</div>
+                <span class="status-badge status-pending">در انتظار</span>
+                <button class="btn btn-warning btn-dev" disabled>
+                    <i class="bi bi-clock"></i>
+                    در انتظار
+                </button>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-4">
+            <div class="link-card">
+                <div class="link-icon">
+                    <i class="bi bi-cart-check"></i>
+                </div>
+                <div class="link-title">صدور فاکتور فروش</div>
+                <div class="link-url">/sales/create/</div>
+                <div class="link-description">ایجاد فاکتور فروش جدید</div>
+                <span class="status-badge status-pending">در انتظار</span>
+                <button class="btn btn-warning btn-dev" disabled>
+                    <i class="bi bi-clock"></i>
+                    در انتظار
+                </button>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-4">
+            <div class="link-card">
+                <div class="link-icon">
+                    <i class="bi bi-cart-plus"></i>
+                </div>
+                <div class="link-title">صدور فاکتور خرید</div>
+                <div class="link-url">/purchases/create/</div>
+                <div class="link-description">ایجاد فاکتور خرید جدید</div>
+                <span class="status-badge status-not-implemented">پیاده‌سازی نشده</span>
+                <button class="btn btn-danger btn-dev" disabled>
+                    <i class="bi bi-x-circle"></i>
+                    پیاده‌سازی نشده
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // انیمیشن کارت‌ها
+    const cards = document.querySelectorAll('.link-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+{% endblock %} 

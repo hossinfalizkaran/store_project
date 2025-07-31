@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}سند یافت نشد{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="error-page">
+        <h1>❌ سند یافت نشد</h1>
+        <p>متأسفانه سند با شماره <strong>{{ sanad_id }}</strong> یافت نشد.</p>
+        <p>احتمالاً این سند حذف شده یا شماره آن اشتباه است.</p>
+        
+        <div class="actions">
+            <a href="{% url 'sanad_list' %}" class="btn btn-primary">
+                ← بازگشت به لیست اسناد
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .error-page {
+        text-align: center;
+        padding: 50px 20px;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .error-page h1 {
+        color: #dc3545;
+        margin-bottom: 20px;
+        font-size: 2.5em;
+    }
+    
+    .error-page p {
+        color: #666;
+        margin-bottom: 15px;
+        font-size: 1.1em;
+        line-height: 1.6;
+    }
+    
+    .actions {
+        margin-top: 30px;
+    }
+    
+    .btn {
+        display: inline-block;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary {
+        background: #007bff;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #0056b3;
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %} 

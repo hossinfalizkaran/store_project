@@ -1,0 +1,408 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .settings-section {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 25px;
+        margin-bottom: 20px;
+    }
+    
+    .settings-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: #333;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    
+    .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    }
+    
+    .checkbox-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: #f8f9fa;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .checkbox-item:hover {
+        background: #e9ecef;
+        border-color: #007bff;
+    }
+    
+    .checkbox-item.selected {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    
+    .checkbox-item input[type="checkbox"] {
+        margin: 0;
+    }
+    
+    .radio-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .radio-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: #f8f9fa;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .radio-item:hover {
+        background: #e9ecef;
+        border-color: #007bff;
+    }
+    
+    .radio-item.selected {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    
+    .radio-item input[type="radio"] {
+        margin: 0;
+    }
+    
+    .btn-save {
+        background: #28a745;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    
+    .btn-save:hover {
+        background: #218838;
+    }
+    
+    .btn-cancel {
+        background: #6c757d;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 16px;
+        margin-right: 10px;
+    }
+    
+    .btn-cancel:hover {
+        background: #5a6268;
+    }
+    
+    .alert {
+        padding: 12px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+    }
+    
+    .alert-success {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+    }
+    
+    .alert-danger {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+    }
+    
+    .preview-section {
+        background: #f8f9fa;
+        border-radius: 6px;
+        padding: 15px;
+        margin-top: 15px;
+    }
+    
+    .preview-title {
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #666;
+    }
+    
+    .preview-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 4px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .preview-table th {
+        background: #e9ecef;
+        padding: 8px;
+        text-align: right;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    
+    .preview-table td {
+        padding: 8px;
+        font-size: 12px;
+        border-bottom: 1px solid #dee2e6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <h2>⚙️ {{ title }}</h2>
+    
+    <!-- پیام‌های سیستم -->
+    <div id="message-container"></div>
+    
+    <form id="settings-form">
+        <!-- تنظیمات مرتب‌سازی -->
+        <div class="settings-section">
+            <div class="settings-title">مرتب‌سازی لیست</div>
+            <div class="form-group">
+                <label class="form-label">مرتب‌سازی بر اساس:</label>
+                <div class="radio-group">
+                    {% for option in sort_options %}
+                    <label class="radio-item {% if option.code == settings.sort_key %}selected{% endif %}">
+                        <input type="radio" name="sort_key" value="{{ option.code }}" 
+                               {% if option.code == settings.sort_key %}checked{% endif %}>
+                        {{ option.name }}
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- تنظیمات ستون‌های قابل نمایش -->
+        <div class="settings-section">
+            <div class="settings-title">ستون‌های قابل نمایش</div>
+            <div class="form-group">
+                <label class="form-label">ستون‌هایی که در لیست نمایش داده شوند:</label>
+                <div class="checkbox-group">
+                    {% for column in available_columns %}
+                    <label class="checkbox-item {% if column.code in settings.visible_columns %}selected{% endif %}">
+                        <input type="checkbox" name="visible_columns" value="{{ column.code }}"
+                               {% if column.code in settings.visible_columns %}checked{% endif %}>
+                        {{ column.name }}
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- تنظیمات نمایش -->
+        <div class="settings-section">
+            <div class="settings-title">تنظیمات نمایش</div>
+            <div class="form-group">
+                <label class="checkbox-item {% if settings.show_inactive %}selected{% endif %}">
+                    <input type="checkbox" name="show_inactive" 
+                           {% if settings.show_inactive %}checked{% endif %}>
+                    نمایش اشخاص غیرفعال
+                </label>
+            </div>
+            <div class="form-group">
+                <label class="form-label">تعداد آیتم در صفحه:</label>
+                <select name="page_size" class="form-control">
+                    <option value="10" {% if settings.page_size == 10 %}selected{% endif %}>10 آیتم</option>
+                    <option value="20" {% if settings.page_size == 20 %}selected{% endif %}>20 آیتم</option>
+                    <option value="50" {% if settings.page_size == 50 %}selected{% endif %}>50 آیتم</option>
+                    <option value="100" {% if settings.page_size == 100 %}selected{% endif %}>100 آیتم</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- پیش‌نمایش -->
+        <div class="settings-section">
+            <div class="settings-title">پیش‌نمایش</div>
+            <div class="preview-section">
+                <div class="preview-title">نمایش فعلی لیست:</div>
+                <table class="preview-table">
+                    <thead>
+                        <tr>
+                            {% for column in settings.visible_columns %}
+                                {% for available_column in available_columns %}
+                                    {% if available_column.code == column %}
+                                        <th>{{ available_column.name }}</th>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                            <th>عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            {% for column in settings.visible_columns %}
+                                <td>مثال</td>
+                            {% endfor %}
+                            <td>دکمه‌ها</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- دکمه‌های عملیات -->
+        <div class="settings-section">
+            <button type="submit" class="btn-save">
+                💾 ذخیره تنظیمات
+            </button>
+            <a href="{% url 'accounting:person_list' %}" class="btn-cancel">
+                ❌ انصراف
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// انتخاب/عدم انتخاب checkbox ها
+document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        const label = this.closest('label');
+        if (this.checked) {
+            label.classList.add('selected');
+        } else {
+            label.classList.remove('selected');
+        }
+    });
+});
+
+// انتخاب radio button ها
+document.querySelectorAll('input[type="radio"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        // حذف انتخاب از همه radio ها
+        document.querySelectorAll('input[type="radio"]').forEach(r => {
+            r.closest('label').classList.remove('selected');
+        });
+        // انتخاب radio فعلی
+        this.closest('label').classList.add('selected');
+    });
+});
+
+// ارسال فرم
+document.getElementById('settings-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // جمع‌آوری داده‌ها
+    const formData = {
+        sort_key: document.querySelector('input[name="sort_key"]:checked').value,
+        visible_columns: Array.from(document.querySelectorAll('input[name="visible_columns"]:checked'))
+            .map(cb => cb.value),
+        show_inactive: document.querySelector('input[name="show_inactive"]').checked,
+        page_size: parseInt(document.querySelector('select[name="page_size"]').value)
+    };
+    
+    // ارسال درخواست
+    fetch('{% url "accounting:person_settings" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            // بازگشت به لیست بعد از 2 ثانیه
+            setTimeout(() => {
+                window.location.href = '{% url "accounting:person_list" %}';
+            }, 2000);
+        } else {
+            showMessage(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        showMessage('خطا در ارتباط با سرور', 'danger');
+        console.error('Error:', error);
+    });
+});
+
+// نمایش پیام
+function showMessage(message, type) {
+    const container = document.getElementById('message-container');
+    container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+    
+    // حذف خودکار پیام بعد از 5 ثانیه
+    setTimeout(() => {
+        container.innerHTML = '';
+    }, 5000);
+}
+
+// دریافت CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %} 
