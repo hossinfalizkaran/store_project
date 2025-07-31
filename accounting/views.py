@@ -41,6 +41,32 @@ from .models import (
 )
 
 
+def normalize_persian_text(text):
+    """
+    متن فارسی را نرمال‌سازی می‌کند تا حروف عربی و فارسی یکسان شوند.
+    """
+    if not text:
+        return text
+    
+    # تبدیل حروف عربی به فارسی
+    arabic_to_persian = {
+        'ي': 'ی',  # ی عربی به ی فارسی
+        'ك': 'ک',  # ک عربی به ک فارسی
+        'ة': 'ه',  # ة عربی به ه فارسی
+        'ؤ': 'و',  # و عربی به و فارسی
+        'ئ': 'ی',  # ئ عربی به ی فارسی
+        'إ': 'ا',  # إ عربی به ا فارسی
+        'أ': 'ا',  # أ عربی به ا فارسی
+        'آ': 'آ',  # آ عربی به آ فارسی
+        'ء': '',   # حذف همزه
+    }
+    
+    for arabic, persian in arabic_to_persian.items():
+        text = text.replace(arabic, persian)
+    
+    return text
+
+
 def get_active_users_for_login():
     """
     لیستی از نام‌های کاربری فعال و دارای رمز عبور را برای نمایش در dropdown لاگین برمی‌گرداند.
@@ -1093,30 +1119,65 @@ def get_person_info(request):
 @login_required
 def person_list(request):
     """
-    لیست اشخاص با تنظیمات داینامیک
+    نمایش لیست اشخاص با قابلیت جستجو و صفحه‌بندی.
     """
-    from .utils import get_person_list_settings, get_list_context, get_column_display_name, get_column_value, format_column_value
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    from django.db.models import Q
+    from django.db import connection
     
-    # دریافت تنظیمات لیست برای کاربر
-    user_id = request.user.id
-    settings_dict = get_person_list_settings(user_id)
-    
-    # دریافت queryset اصلی
-    queryset = Perinf.objects.all()
-    
-    # اعمال تنظیمات و دریافت context
-    context = get_list_context(queryset, settings_dict, request)
-    
-    # اضافه کردن اطلاعات اضافی
-    context.update({
+    # دریافت لیست اولیه اشخاص به همراه گروه آنها برای بهینه‌سازی کوئری
+    persons_qs = Perinf.objects.using('legacy').select_related('grpcode').order_by('code')
+
+    # منطق جستجو
+    search_query = request.GET.get('q', '').strip()
+    if search_query:
+        # استفاده از کوئری خام SQL برای جستجوی بهتر با COLLATE
+        with connection.cursor() as cursor:
+            # استفاده از COLLATE برای جستجوی غیرحساس به حروف فارسی و عربی
+            query = """
+                SELECT p.*, pg.Name as GroupName 
+                FROM Perinf p 
+                LEFT JOIN Pergrp pg ON p.GrpCode = pg.Code
+                WHERE (
+                    ISNULL(p.Code, '') LIKE %s OR
+                    ISNULL(p.FullName, '') COLLATE Persian_100_CI_AI LIKE %s COLLATE Persian_100_CI_AI OR
+                    ISNULL(p.Tel1, '') LIKE %s OR
+                    ISNULL(p.Mobile, '') LIKE %s
+                )
+                ORDER BY p.Code
+            """
+            search_param = f'%{search_query}%'
+            cursor.execute(query, [search_param, search_param, search_param, search_param])
+            
+            # تبدیل نتایج به QuerySet
+            columns = [col[0] for col in cursor.description]
+            persons_data = cursor.fetchall()
+            
+            # ایجاد QuerySet از نتایج
+            persons_qs = Perinf.objects.using('legacy').select_related('grpcode').filter(
+                code__in=[row[columns.index('Code')] for row in persons_data]
+            ).order_by('code')
+
+    # منطق صفحه‌بندی (Pagination)
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(persons_qs, 25)  # نمایش 25 آیتم در هر صفحه
+
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        # اگر شماره صفحه عدد نباشد، صفحه اول را نمایش بده
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        # اگر شماره صفحه خارج از محدوده باشد، آخرین صفحه را نمایش بده
+        page_obj = paginator.page(paginator.num_pages)
+
+    context = {
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'total_count': paginator.count,
         'title': 'لیست اشخاص',
-        'model_name': 'Perinf',
-        'get_column_display_name': get_column_display_name,
-        'get_column_value': get_column_value,
-        'format_column_value': format_column_value,
-    })
-    
-    return render(request, 'accounting/person/list.html', context)
+    }
+    return render(request, 'person_list.html', context)
 
 
 @login_required
@@ -1351,12 +1412,88 @@ def backup_db(request):
 @login_required
 def sanad_list(request):
     """لیست اسناد حسابداری"""
-    sanads = Sanad.objects.all().order_by('-tarikh')
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    from django.db import connection
+    
+    # دریافت پارامترهای جستجو و مرتب‌سازی
+    search_query = request.GET.get('search', '').strip()
+    sort = request.GET.get('sort', 'date')
+    order = request.GET.get('order', 'desc')
+    page_size = int(request.GET.get('page_size', 20))
+    page_number = request.GET.get('page', 1)
+    
+    # تعیین مرتب‌سازی
+    if sort == 'date':
+        order_by = 'Tarikh'
+    elif sort == 'number':
+        order_by = 'Code'
+    elif sort == 'type':
+        order_by = 'Zamaem'
+    else:
+        order_by = 'Tarikh'
+    
+    order_by += ' DESC' if order == 'desc' else ' ASC'
+    
+    # ساخت کوئری با جستجو
+    where_clause = ""
+    params = []
+    
+    if search_query:
+        # استفاده از COLLATE برای جستجوی غیرحساس به حروف فارسی و عربی
+        collation = "COLLATE Persian_100_CI_AI"
+        where_clause = f"""
+            WHERE (
+                ISNULL(Code, '') LIKE %s OR
+                ISNULL(Sharh, '') {collation} LIKE %s {collation} OR 
+                ISNULL(SanadID, '') LIKE %s OR
+                ISNULL(Tarikh, '') LIKE %s OR
+                ISNULL(Zamaem, '') {collation} LIKE %s {collation}
+            )
+        """
+        search_param = f'%{search_query}%'
+        params = [search_param, search_param, search_param, search_param, search_param]
+    
+    # اجرای کوئری
+    with connection.cursor() as cursor:
+        count_query = f"SELECT COUNT(*) FROM Sanad {where_clause}"
+        cursor.execute(count_query, params)
+        total_count = cursor.fetchone()[0]
+    
+    with connection.cursor() as cursor:
+        data_query = f"""
+            SELECT * FROM Sanad 
+            {where_clause}
+            ORDER BY {order_by}
+            OFFSET {(int(page_number) - 1) * page_size} ROWS 
+            FETCH NEXT {page_size} ROWS ONLY
+        """
+        cursor.execute(data_query, params)
+        sanads_data = cursor.fetchall()
+        columns = [col[0] for col in cursor.description]
+    
+    # تبدیل نتایج به QuerySet
+    sanad_codes = [row[columns.index('Code')] for row in sanads_data]
+    sanads = Sanad.objects.filter(code__in=sanad_codes).order_by('-tarikh')
+    
+    # صفحه‌بندی
+    paginator = Paginator(sanads, page_size)
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+    
     context = {
-        'sanads': sanads,
+        'sanads': page_obj,
+        'search_query': search_query,
+        'sort': sort,
+        'order': order,
+        'page_size': page_size,
+        'total_count': total_count,
         'title': 'لیست اسناد حسابداری'
     }
-    return render(request, 'accounting/sanad/list.html', context)
+    return render(request, 'accounting/sanad_list.html', context)
 
 
 @login_required

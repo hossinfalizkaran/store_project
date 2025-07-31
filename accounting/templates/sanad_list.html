@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load persian_filters %}
 
 {% block title %}لیست اسناد{% endblock %}
 
@@ -231,7 +232,7 @@
                     -
                 {% endif %}
             </td>
-            <td>{{ sanad.tarikh|default:'' }}</td>
+            <td>{{ sanad.tarikh|to_jalali|default:'' }}</td>
             <td>{{ sanad.zamaem|default:'' }}</td>
             <td>{{ sanad.sharh|default:'' }}</td>
             <td>{{ sanad.status|default:'' }}</td>

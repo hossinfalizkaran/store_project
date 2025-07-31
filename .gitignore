@@ -170,4 +170,7 @@ Thumbs.db
 
 # Temporary files
 *.tmp
-*.temp 
+*.temp
+
+# User passwords file
+user_passwords.txt 
