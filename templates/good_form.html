@@ -1,281 +1,113 @@
-{% extends 'base.html' %}
-{% load static %}
-
-{% block title %}{{ title }}{% endblock %}
-
+{% extends "base.html" %}
+{% block title %}{{ form_title }}{% endblock %}
 {% block content %}
-<div class="container-fluid">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-box-seam me-2"></i>
-                        {{ title }}
-                    </h5>
-                    <a href="{% url 'good_list' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>
-                        بازگشت به لیست
-                    </a>
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header"><h3>{{ form_title }}</h3></div>
+        <div class="card-body">
+            <form method="post" action="{% if good %}{% url 'good_update' good.code %}{% else %}{% url 'good_create' %}{% endif %}">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.abbname.id_for_label }}" class="form-label">{{ form.abbname.label }}</label>
+                            {{ form.abbname }}
+                            {% if form.abbname.errors %}
+                                <div class="text-danger">{{ form.abbname.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.grpcode.id_for_label }}" class="form-label">{{ form.grpcode.label }}</label>
+                            {{ form.grpcode }}
+                            {% if form.grpcode.errors %}
+                                <div class="text-danger">{{ form.grpcode.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.unit.id_for_label }}" class="form-label">{{ form.unit.label }}</label>
+                            {{ form.unit }}
+                            {% if form.unit.errors %}
+                                <div class="text-danger">{{ form.unit.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.unit2.id_for_label }}" class="form-label">{{ form.unit2.label }}</label>
+                            {{ form.unit2 }}
+                            {% if form.unit2.errors %}
+                                <div class="text-danger">{{ form.unit2.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.store.id_for_label }}" class="form-label">{{ form.store.label }}</label>
+                            {{ form.store }}
+                            {% if form.store.errors %}
+                                <div class="text-danger">{{ form.store.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.consumerprice.id_for_label }}" class="form-label">{{ form.consumerprice.label }}</label>
+                            {{ form.consumerprice }}
+                            {% if form.consumerprice.errors %}
+                                <div class="text-danger">{{ form.consumerprice.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.status.id_for_label }}" class="form-label">{{ form.status.label }}</label>
+                            {{ form.status }}
+                            {% if form.status.errors %}
+                                <div class="text-danger">{{ form.status.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.taxexempt }}
+                                <label class="form-check-label" for="{{ form.taxexempt.id_for_label }}">
+                                    {{ form.taxexempt.label }}
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.chargeexempt }}
+                                <label class="form-check-label" for="{{ form.chargeexempt.id_for_label }}">
+                                    {{ form.chargeexempt.label }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="card-body">
-                    <form method="post" class="needs-validation" novalidate>
-                        {% csrf_token %}
-                        
-                        <!-- پیام‌های خطا -->
-                        {% if form.errors %}
-                            <div class="alert alert-danger">
-                                <h6 class="alert-heading">خطاهای زیر را برطرف کنید:</h6>
-                                <ul class="mb-0">
-                                    {% for field, errors in form.errors.items %}
-                                        {% for error in errors %}
-                                            <li>{{ error }}</li>
-                                        {% endfor %}
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                        {% endif %}
-                        
-                        <div class="row">
-                            <!-- اطلاعات اصلی -->
-                            <div class="col-md-6">
-                                <h6 class="text-muted mb-3">اطلاعات اصلی</h6>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.code.id_for_label }}" class="form-label">
-                                        {{ form.code.label }}
-                                        {% if form.code.field.required %}
-                                            <span class="text-danger">*</span>
-                                        {% endif %}
-                                    </label>
-                                    {{ form.code }}
-                                    {% if form.code.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in form.code.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.name.id_for_label }}" class="form-label">
-                                        {{ form.name.label }}
-                                        {% if form.name.field.required %}
-                                            <span class="text-danger">*</span>
-                                        {% endif %}
-                                    </label>
-                                    {{ form.name }}
-                                    {% if form.name.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in form.name.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.abbname.id_for_label }}" class="form-label">
-                                        {{ form.abbname.label }}
-                                    </label>
-                                    {{ form.abbname }}
-                                    {% if form.abbname.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in form.abbname.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.kala_name.id_for_label }}" class="form-label">
-                                        {{ form.kala_name.label }}
-                                    </label>
-                                    {{ form.kala_name }}
-                                    {% if form.kala_name.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in form.kala_name.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.kala_type.id_for_label }}" class="form-label">
-                                        {{ form.kala_type.label }}
-                                    </label>
-                                    {{ form.kala_type }}
-                                    {% if form.kala_type.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in form.kala_type.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            
-                            <!-- گروه‌بندی و واحدها -->
-                            <div class="col-md-6">
-                                <h6 class="text-muted mb-3">گروه‌بندی و واحدها</h6>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.grpcode.id_for_label }}" class="form-label">
-                                        {{ form.grpcode.label }}
-                                    </label>
-                                    {{ form.grpcode }}
-                                    {% if form.grpcode.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in form.grpcode.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.unit.id_for_label }}" class="form-label">
-                                        {{ form.unit.label }}
-                                    </label>
-                                    {{ form.unit }}
-                                    {% if form.unit.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in form.unit.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.unit2.id_for_label }}" class="form-label">
-                                        {{ form.unit2.label }}
-                                    </label>
-                                    {{ form.unit2 }}
-                                    {% if form.unit2.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in form.unit2.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.store.id_for_label }}" class="form-label">
-                                        {{ form.store.label }}
-                                    </label>
-                                    {{ form.store }}
-                                    {% if form.store.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in form.store.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.status.id_for_label }}" class="form-label">
-                                        {{ form.status.label }}
-                                    </label>
-                                    {{ form.status }}
-                                    {% if form.status.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in form.status.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- قیمت‌ها -->
-                        <div class="row mt-4">
-                            <div class="col-12">
-                                <h6 class="text-muted mb-3">قیمت‌ها</h6>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="{{ form.consumerprice.id_for_label }}" class="form-label">
-                                                {{ form.consumerprice.label }}
-                                            </label>
-                                            {{ form.consumerprice }}
-                                            {% if form.consumerprice.errors %}
-                                                <div class="invalid-feedback d-block">
-                                                    {% for error in form.consumerprice.errors %}
-                                                        {{ error }}
-                                                    {% endfor %}
-                                                </div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="{{ form.costbgprd.id_for_label }}" class="form-label">
-                                                {{ form.costbgprd.label }}
-                                            </label>
-                                            {{ form.costbgprd }}
-                                            {% if form.costbgprd.errors %}
-                                                <div class="invalid-feedback d-block">
-                                                    {% for error in form.costbgprd.errors %}
-                                                        {{ error }}
-                                                    {% endfor %}
-                                                </div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- توضیحات -->
-                        <div class="row mt-4">
-                            <div class="col-12">
-                                <h6 class="text-muted mb-3">توضیحات</h6>
-                                <div class="mb-3">
-                                    <label for="{{ form.comment.id_for_label }}" class="form-label">
-                                        {{ form.comment.label }}
-                                    </label>
-                                    {{ form.comment }}
-                                    {% if form.comment.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in form.comment.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- دکمه‌های عملیات -->
-                        <div class="row mt-4">
-                            <div class="col-12">
-                                <div class="d-flex justify-content-between">
-                                    <a href="{% url 'good_list' %}" class="btn btn-outline-secondary">
-                                        <i class="bi bi-arrow-left me-1"></i>
-                                        انصراف
-                                    </a>
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="bi bi-check-circle me-1"></i>
-                                        {% if is_create %}
-                                            ایجاد کالا
-                                        {% else %}
-                                            بروزرسانی
-                                        {% endif %}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
+                <div class="mb-3">
+                    <label for="{{ form.comment.id_for_label }}" class="form-label">{{ form.comment.label }}</label>
+                    {{ form.comment }}
+                    {% if form.comment.errors %}
+                        <div class="text-danger">{{ form.comment.errors }}</div>
+                    {% endif %}
                 </div>
-            </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success">ذخیره</button>
+                    <a href="{% url 'good_list' %}" class="btn btn-secondary">انصراف</a>
+                </div>
+            </form>
         </div>
     </div>
 </div>

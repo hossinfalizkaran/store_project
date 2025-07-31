@@ -358,60 +358,69 @@ class GoodForm(forms.ModelForm):
     class Meta:
         model = Goodinf
         fields = [
-            'code', 'name', 'grpcode', 'unit', 'unit2', 'store', 
-            'status', 'consumerprice', 'costbgprd', 'comment', 
-            'abbname', 'kala_name', 'kala_type'
+            'name', 'abbname', 'grpcode', 'unit', 'unit2', 'store',
+            'consumerprice', 'status', 'comment', 'taxexempt', 'chargeexempt'
         ]
-        
+
         widgets = {
-            'code': forms.NumberInput(attrs={'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'abbname': forms.TextInput(attrs={'class': 'form-control'}),
             'grpcode': forms.Select(attrs={'class': 'form-select'}),
             'unit': forms.Select(attrs={'class': 'form-select'}),
             'unit2': forms.Select(attrs={'class': 'form-select'}),
             'store': forms.Select(attrs={'class': 'form-select'}),
-            'status': forms.Select(attrs={'class': 'form-select'}, choices=[(0, 'فعال'), (1, 'غیرفعال')]),
-            'consumerprice': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'costbgprd': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'consumerprice': forms.NumberInput(attrs={'class': 'form-control'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'abbname': forms.TextInput(attrs={'class': 'form-control'}),
-            'kala_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'kala_type': forms.TextInput(attrs={'class': 'form-control'}),
+            'taxexempt': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'chargeexempt': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
-        
+
         labels = {
-            'code': 'کد کالا',
-            'name': 'نام کالا',
+            'name': 'نام کالا/خدمت',
+            'abbname': 'نام اختصاری',
             'grpcode': 'گروه کالا',
             'unit': 'واحد اصلی',
             'unit2': 'واحد فرعی',
-            'store': 'انبار',
-            'status': 'وضعیت',
+            'store': 'انبار پیش‌فرض',
             'consumerprice': 'قیمت مصرف‌کننده',
-            'costbgprd': 'قیمت تمام شده',
+            'status': 'وضعیت',
             'comment': 'توضیحات',
-            'abbname': 'نام مختصر',
-            'kala_name': 'نام کالا (انگلیسی)',
-            'kala_type': 'نوع کالا',
+            'taxexempt': 'معاف از مالیات',
+            'chargeexempt': 'معاف از عوارض',
         }
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # تنظیم queryset برای فیلدهای ForeignKey
+        # فقط نام کالا اجباری است
+        self.fields['name'].required = True
+        
+        # تنظیم فیلدهای ForeignKey به صورت اختیاری
+        self.fields['grpcode'].required = False
         self.fields['grpcode'].queryset = Goodgrps.objects.using('legacy').all()
-        self.fields['grpcode'].empty_label = "انتخاب گروه"
+        self.fields['grpcode'].empty_label = "--- بدون گروه ---"
         
+        self.fields['unit'].required = False
         self.fields['unit'].queryset = Units.objects.using('legacy').all()
-        self.fields['unit'].empty_label = "انتخاب واحد"
+        self.fields['unit'].empty_label = "--- بدون واحد ---"
         
+        self.fields['unit2'].required = False
         self.fields['unit2'].queryset = Units.objects.using('legacy').all()
-        self.fields['unit2'].empty_label = "انتخاب واحد فرعی"
+        self.fields['unit2'].empty_label = "--- بدون واحد فرعی ---"
         
+        self.fields['store'].required = False
         self.fields['store'].queryset = Stores.objects.using('legacy').all()
-        self.fields['store'].empty_label = "انتخاب انبار"
+        self.fields['store'].empty_label = "--- بدون انبار ---"
         
-        # تنظیم مقادیر پیش‌فرض
-        if not self.instance.pk:  # اگر کالای جدید است
-            self.fields['status'].initial = 0  # فعال
-            self.fields['consumerprice'].initial = 0  # قیمت صفر
-            self.fields['costbgprd'].initial = 0  # قیمت تمام شده صفر 
+        # سایر فیلدهایی که در مدل blank=True هستند را اختیاری می‌کنیم
+        for field_name, field in self.fields.items():
+            if field_name != 'name':
+                model_field = self.Meta.model._meta.get_field(field_name)
+                if model_field.blank:
+                    field.required = False
+
+        # تنظیم choices برای فیلد status
+        self.fields['status'].widget.choices = [
+            (0, 'فعال'),
+            (1, 'غیرفعال')
+        ] 
