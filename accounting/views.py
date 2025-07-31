@@ -39,6 +39,7 @@ from .models import (
     FactFo, FactFoDetail, Kharid, ChequesRecieve, ChequePay,
     Chequerecievelog, ChequepayLog, GetRecieve, Stores
 )
+from .forms import PersonForm, GoodForm
 
 
 def normalize_persian_text(text):
@@ -1191,60 +1192,59 @@ def person_detail(request, person_id):
 
 @login_required
 def person_create(request):
-    """
-    ایجاد شخص جدید
-    """
-    from django.shortcuts import redirect
-    from .forms import PersonForm
-    
     if request.method == 'POST':
         form = PersonForm(request.POST)
         if form.is_valid():
             person = form.save(commit=False)
-            # استفاده از دیتابیس legacy
+            
+            # پیدا کردن بزرگترین کد موجود و اختصاص کد جدید
+            max_code_result = Perinf.objects.using('legacy').aggregate(max_code=Max('code'))
+            max_code = max_code_result.get('max_code') or 0
+            person.code = max_code + 1
+            
+            # ساخت fullname بعد از اعتبارسنجی
+            person.fullname = f"{form.cleaned_data.get('name') or ''} {form.cleaned_data.get('lname') or ''}".strip()
+
             person.save(using='legacy')
-            messages.success(request, f'شخص "{person.fullname or person.name}" با موفقیت ایجاد شد.')
+            messages.success(request, f"شخص '{person.fullname}' با موفقیت ایجاد شد.")
             return redirect('person_list')
+        else:
+            # اگر فرم معتبر نبود، پیام خطا را نمایش بده
+            messages.error(request, "لطفاً خطاهای فرم را برطرف کنید.")
     else:
         form = PersonForm()
-    
+
     context = {
         'form': form,
-        'title': 'ایجاد شخص جدید',
-        'is_create': True,
+        'form_title': 'ایجاد شخص جدید'
     }
-    
     return render(request, 'person_form.html', context)
 
 
 @login_required
 def person_update(request, person_id):
-    """
-    ویرایش شخص موجود
-    """
-    from django.shortcuts import redirect
-    from .forms import PersonForm
-    
     person = get_object_or_404(Perinf.objects.using('legacy'), code=person_id)
-    
     if request.method == 'POST':
         form = PersonForm(request.POST, instance=person)
         if form.is_valid():
-            person = form.save(commit=False)
-            # استفاده از دیتابیس legacy
-            person.save(using='legacy')
-            messages.success(request, f'اطلاعات شخص "{person.fullname or person.name}" با موفقیت بروزرسانی شد.')
+            updated_person = form.save(commit=False)
+            # بازسازی fullname
+            updated_person.fullname = f"{form.cleaned_data.get('name') or ''} {form.cleaned_data.get('lname') or ''}".strip()
+            updated_person.save(using='legacy')
+
+            messages.success(request, f"اطلاعات شخص '{person.fullname}' با موفقیت ویرایش شد.")
             return redirect('person_detail', person_id=person.code)
+        else:
+            # اگر فرم معتبر نبود، پیام خطا را نمایش بده
+            messages.error(request, "لطفاً خطاهای فرم را برطرف کنید.")
     else:
         form = PersonForm(instance=person)
-    
+
     context = {
         'form': form,
-        'person': person,
-        'title': f'ویرایش شخص - {person.fullname or person.name or person.code}',
-        'is_create': False,
+        'form_title': f'ویرایش شخص - {person.fullname}',
+        'person': person
     }
-    
     return render(request, 'person_form.html', context)
 
 

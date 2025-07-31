@@ -23,10 +23,10 @@ class SaleForm(ModelForm):
             'sharh': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
         labels = {
-            'code': 'شماره فاکتور',
+            'code': 'کد فاکتور',
             'shakhs_code': 'مشتری',
             'tarikh': 'تاریخ',
-            'sharh': 'شرح'
+            'sharh': 'شرح',
         }
 
 
@@ -52,7 +52,7 @@ class SaleItemForm(forms.Form):
     discount = forms.DecimalField(
         max_digits=5,
         decimal_places=2,
-        label='تخفیف %',
+        label='تخفیف (%)',
         required=False,
         initial=0,
         widget=forms.NumberInput(attrs={'class': 'form-control'})
@@ -75,10 +75,10 @@ class PurchaseForm(ModelForm):
             'sharh': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
         labels = {
-            'code': 'شماره فاکتور',
-            'shakhs_code': 'تامین‌کننده',
+            'code': 'کد فاکتور',
+            'shakhs_code': 'فروشنده',
             'tarikh': 'تاریخ',
-            'sharh': 'شرح'
+            'sharh': 'شرح',
         }
 
 
@@ -99,6 +99,14 @@ class PurchaseItemForm(forms.Form):
         max_digits=15,
         decimal_places=2,
         label='قیمت واحد',
+        widget=forms.NumberInput(attrs={'class': 'form-control'})
+    )
+    discount = forms.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        label='تخفیف (%)',
+        required=False,
+        initial=0,
         widget=forms.NumberInput(attrs={'class': 'form-control'})
     )
 
@@ -132,8 +140,8 @@ class ChequeReceiveForm(ModelForm):
             'bankname': 'نام بانک',
             'bankbranch': 'شعبه',
             'accountid': 'شماره حساب',
-            'description': 'شرح',
-            'percode': 'صاحب چک'
+            'description': 'توضیحات',
+            'percode': 'شخص',
         }
 
 
@@ -158,7 +166,7 @@ class ChequeStatusForm(forms.Form):
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     comment = forms.CharField(
-        max_length=500,
+        max_length=200,
         label='توضیحات',
         required=False,
         widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3})
@@ -190,8 +198,8 @@ class ChequePayForm(ModelForm):
             'chequedate': 'تاریخ چک',
             'cost': 'مبلغ',
             'bankcode': 'بانک',
-            'description': 'شرح',
-            'percode': 'ذینفع'
+            'description': 'توضیحات',
+            'percode': 'شخص',
         }
 
 
@@ -218,8 +226,8 @@ class SaleSearchForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-control'})
     )
     status = forms.ChoiceField(
-        choices=[(1, 'فعال'), (0, 'غیرفعال')],
-        label='وضعیت',
+        choices=[('', 'همه'), ('1', 'فروش'), ('2', 'برگشت')],
+        label='نوع',
         required=False,
         widget=forms.Select(attrs={'class': 'form-control'})
     )
@@ -234,7 +242,7 @@ class InventorySearchForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-control'})
     )
     store = forms.ChoiceField(
-        choices=[],  # باید از مدل Store پر شود
+        choices=[('', 'همه انبارها')],
         label='انبار',
         required=False,
         widget=forms.Select(attrs={'class': 'form-control'})
@@ -268,35 +276,33 @@ class FinancialReportForm(forms.Form):
         widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
     )
     group_by = forms.ChoiceField(
-        choices=[
-            ('daily', 'روزانه'),
-            ('weekly', 'هفتگی'),
-            ('monthly', 'ماهانه'),
-            ('yearly', 'سالانه')
-        ],
+        choices=[('customer', 'مشتری'), ('product', 'کالا'), ('date', 'تاریخ')],
         label='گروه‌بندی',
         widget=forms.Select(attrs={'class': 'form-control'})
-    ) 
+    )
 
 
 class PersonForm(forms.ModelForm):
-    """
-    فرم ایجاد و ویرایش اشخاص
-    """
-    
+    # فیلد گروه را به صورت دستی تعریف می‌کنیم تا کنترل کامل روی آن داشته باشیم
+    grpcode = forms.ModelChoiceField(
+        queryset=Pergrp.objects.using('legacy').all(),
+        required=False, # این فیلد اختیاری است
+        label="گروه شخص",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        empty_label="--- بدون گروه ---"
+    )
+
     class Meta:
         model = Perinf
+        # **نکته مهم:** 'grpcode' از این لیست حذف شده چون به صورت دستی تعریف شده
         fields = [
-            'code', 'name', 'lname', 'fullname', 'grpcode', 
-            'tel1', 'mobile', 'addr1', 'email', 'credit', 
-            'status', 'comment', 'identifier', 'economicno'
+            'name', 'lname', 'tel1', 'mobile', 'addr1', 
+            'email', 'credit', 'status', 'comment', 'identifier', 'economicno'
         ]
         
         widgets = {
-            'code': forms.HiddenInput(),
             'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'lname': forms.TextInput(attrs={'class': 'form-control'}), # این فیلد را در __init__ اجباری می‌کنیم
-            'fullname': forms.TextInput(attrs={'class': 'form-control', 'readonly': True}),
+            'lname': forms.TextInput(attrs={'class': 'form-control'}),
             'tel1': forms.TextInput(attrs={'class': 'form-control'}),
             'mobile': forms.TextInput(attrs={'class': 'form-control'}),
             'addr1': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -307,12 +313,10 @@ class PersonForm(forms.ModelForm):
             'identifier': forms.TextInput(attrs={'class': 'form-control'}),
             'economicno': forms.TextInput(attrs={'class': 'form-control'}),
         }
-        
+
         labels = {
-            'code': 'کد شخص',
             'name': 'نام',
             'lname': 'نام خانوادگی',
-            'fullname': 'نام کامل',
             'tel1': 'تلفن',
             'mobile': 'موبایل',
             'addr1': 'آدرس',
@@ -326,22 +330,9 @@ class PersonForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        # فقط 'lname' را اجباری نگه می‌داریم
+        # فقط نام خانوادگی اجباری است
         self.fields['lname'].required = True
         
-        # تنظیم فیلد grpcode به صورت اختیاری
-        self.fields['grpcode'].required = False
-        self.fields['grpcode'].queryset = Pergrp.objects.using('legacy').all()
-        self.fields['grpcode'].empty_label = "--- بدون گروه ---"
-        
-        # بقیه فیلدهایی که در مدل blank=True هستند را اختیاری می‌کنیم
-        for field_name, field in self.fields.items():
-            if field_name not in ['lname', 'grpcode']:
-                model_field = self.Meta.model._meta.get_field(field_name)
-                if model_field.blank:
-                    field.required = False
-
         # تنظیم choices برای فیلد status
         self.fields['status'].widget.choices = [
             (0, 'فعال'),
@@ -350,11 +341,8 @@ class PersonForm(forms.ModelForm):
         ]
 
 
+# فرم کالا (GoodForm) را هم برای مراحل بعدی اضافه می‌کنیم
 class GoodForm(forms.ModelForm):
-    """
-    فرم ایجاد و ویرایش کالاها
-    """
-    
     class Meta:
         model = Goodinf
         fields = [
