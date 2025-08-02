@@ -1,0 +1,522 @@
+{% extends "base.html" %}
+{% block title %}صدور فاکتور فروش{% endblock %}
+
+{% block extra_css %}
+<style>
+    .invoice-form {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .invoice-details {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .form-row {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .form-group {
+        flex: 1;
+    }
+    
+    .detail-row {
+        background: #f8f9fa;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .detail-row:hover {
+        background: #e9ecef;
+    }
+    
+    .row-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .row-number {
+        font-weight: bold;
+        color: #495057;
+    }
+    
+    .delete-row {
+        color: #dc3545;
+        cursor: pointer;
+        height: 20px;
+        width: 20px;
+        text-align: center;
+    }
+    
+    .delete-row:hover {
+        color: #c82333;
+    }
+    
+    .calculation-row {
+        background: #e9ecef;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 10px;
+    }
+    
+    .total-section {
+        background: #28a745;
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+    }
+    
+    .total-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+    
+    .total-label {
+        font-weight: bold;
+    }
+    
+    .total-value {
+        font-size: 1.1em;
+    }
+    
+    .add-row-btn {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-bottom: 20px;
+    }
+    
+    .add-row-btn:hover {
+        background: #0056b3;
+    }
+    
+    .submit-btn {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 5px;
+        font-size: 1.1em;
+        cursor: pointer;
+        width: 100%;
+    }
+    
+    .submit-btn:hover {
+        background: #218838;
+    }
+    
+    .readonly-field {
+        background-color: #f8f9fa !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-receipt me-2"></i>
+                        صدور فاکتور فروش
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="sale-invoice-form">
+                        {% csrf_token %}
+                        
+                        <!-- فرم سربرگ فاکتور -->
+                        <div class="invoice-form">
+                            <h5 class="mb-3">اطلاعات فاکتور</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.shakhs_code.id_for_label }}">{{ form.shakhs_code.label }}</label>
+                                        {{ form.shakhs_code }}
+                                        {% if form.shakhs_code.errors %}
+                                            <div class="text-danger">{{ form.shakhs_code.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.visitor_code.id_for_label }}">{{ form.visitor_code.label }}</label>
+                                        {{ form.visitor_code }}
+                                        {% if form.visitor_code.errors %}
+                                            <div class="text-danger">{{ form.visitor_code.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.tarikh.id_for_label }}">{{ form.tarikh.label }}</label>
+                                        {{ form.tarikh }}
+                                        {% if form.tarikh.errors %}
+                                            <div class="text-danger">{{ form.tarikh.errors }}</div>
+                                        {% endif %}
+ dia
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.takhfif.id_for_label }}">{{ form.takhfif.label }}</label>
+                                        {{ form.takhfif }}
+                                        {% if form.takhfif.errors %}
+                                            <div class="text-danger">{{ form.takhfif.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="form-group">
+                                        <label for="{{ form.sharh.id_for_label }}">{{ form.sharh.label }}</label>
+                                        {{ form.sharh }}
+                                        {% if form.sharh.errors %}
+                                            <div class="text-danger">{{ form.sharh.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- فرم‌ست جزئیات فاکتور -->
+                        <div class="invoice-details">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0">جزئیات فاکتور</h5>
+                                <button type="button" class="btn btn-primary btn-sm" id="add-row-btn">
+                                    <i class="bi bi-plus-circle me-1"></i>
+                                    افزودن ردیف جدید
+                                </button>
+                            </div>
+                            
+                            {{ formset.management_form }}
+                            
+                            <div id="formset-container">
+                                {% for form in formset %}
+                                    <div class="detail-row" data-form-index="{{ forloop.counter0 }}">
+                                        <div class="row-header">
+                                            <span class="row-number">ردیف {{ forloop.counter }}</span>
+                                            {% if formset.can_delete %}
+                                                <span class="delete-row" onclick="deleteRow(this)">
+                                                    <i class="bi bi-trash"></i>
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                        
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label for="{{ form.kala_code.id_for_label }}">{{ form.kala_code.label }}</label>
+                                                    {{ form.kala_code }}
+                                                    {% if form.kala_code.errors %}
+                                                        <div class="text-danger">{{ form.kala_code.errors }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label for="{{ form.an_code.id_for_label }}">{{ form.an_code.label }}</label>
+                                                    {{ form.an_code }}
+                                                    {% if form.an_code.errors %}
+                                                        <div class="text-danger">{{ form.an_code.errors }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label for="{{ form.meghdar.id_for_label }}">{{ form.meghdar.label }}</label>
+                                                    {{ form.meghdar }}
+                                                    {% if form.meghdar.errors %}
+                                                        <div class="text-danger">{{ form.meghdar.errors }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label for="{{ form.naghdi.id_for_label }}">{{ form.naghdi.label }}</label>
+                                                    {{ form.naghdi }}
+                                                    {% if form.naghdi.errors %}
+                                                        <div class="text-danger">{{ form.naghdi.errors }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label for="{{ form.takhfif.id_for_label }}">{{ form.takhfif.label }}</label>
+                                                    {{ form.takhfif }}
+                                                    {% if form.takhfif.errors %}
+                                                        <div class="text-danger">{{ form.takhfif.errors }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-1">
+                                                <div class="form-group">
+                                                    <label for="{{ form.mablagh.id_for_label }}">{{ form.mablagh.label }}</label>
+                                                    {{ form.mablagh }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="calculation-row">
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    <div class="form-group">
+                                                        <label for="{{ form.mablagh_takhfif.id_for_label }}">{{ form.mablagh_takhfif.label }}</label>
+                                                        {{ form.mablagh_takhfif }}
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="form-group">
+                                                        <label for="{{ form.mablagh_nahayi.id_for_label }}">{{ form.mablagh_nahayi.label }}</label>
+                                                        {{ form.mablagh_nahayi }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- فیلدهای مخفی برای مدیریت formset -->
+                                        {% for hidden in form.hidden_fields %}
+                                            {{ hidden }}
+                                        {% endfor %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- بخش جمع کل -->
+                        <div class="total-section">
+                            <div class="total-row">
+                                <span class="total-label">جمع کل فاکتور:</span>
+                                <span class="total-value" id="invoice-total">0</span>
+                            </div>
+                            <div class="total-row">
+                                <span class="total-label">تخفیف کلی:</span>
+                                <span class="total-value" id="invoice-discount">0</span>
+                            </div>
+                            <div class="total-row">
+                                <span class="total-label">مبلغ نهایی:</span>
+                                <span class="total-value" id="invoice-final">0</span>
+                            </div>
+                        </div>
+
+                        <!-- دکمه ثبت -->
+                        <div class="mt-4">
+                            <button type="submit" class="submit-btn">
+                                <i class="bi bi-check-circle me-2"></i>
+                                ثبت فاکتور
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let formIndex = {{ formset.forms|length }};
+    const container = document.getElementById('formset-container');
+    const addRowBtn = document.getElementById('add-row-btn');
+    const managementForm = document.querySelector('[name="form-TOTAL_FORMS"]');
+    
+    // تابع افزودن ردیف جدید
+    function addNewRow() {
+        const newRow = document.createElement('div');
+        newRow.className = 'detail-row';
+        newRow.setAttribute('data-form-index', formIndex);
+        
+        // ایجاد HTML برای ردیف جدید
+        newRow.innerHTML = `
+            <div class="row-header">
+                <span class="row-number">ردیف ${formIndex + 1}</span>
+                <span class="delete-row" onclick="deleteRow(this)">
+                    <i class="bi bi-trash"></i>
+                </span>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label>کالا</label>
+                        <select name="form-${formIndex}-kala_code" class="form-select good-select" data-placeholder="کالا را انتخاب کنید...">
+                            <option value="">--- کالا را انتخاب کنید ---</option>
+                            {% for good in goods %}
+                                <option value="{{ good.code }}">{{ good.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label>انبار</label>
+                        <select name="form-${formIndex}-an_code" class="form-select store-select">
+                            <option value="">--- انبار را انتخاب کنید ---</option>
+                            {% for store in stores %}
+                                <option value="{{ store.code }}">{{ store.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label>مقدار</label>
+                        <input type="number" name="form-${formIndex}-meghdar" class="form-control quantity-input" step="0.01" min="0.01" placeholder="0">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label>فی فروش</label>
+                        <input type="number" name="form-${formIndex}-naghdi" class="form-control price-input" step="0.01" min="0" placeholder="0">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label>تخفیف (%)</label>
+                        <input type="number" name="form-${formIndex}-takhfif" class="form-control discount-input" step="0.01" min="0" max="100" placeholder="0">
+                    </div>
+                </div>
+                <div class="col-md-1">
+                    <div class="form-group">
+                        <label>جمع ردیف</label>
+                        <input type="number" name="form-${formIndex}-mablagh" class="form-control row-total" readonly placeholder="0">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="calculation-row">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>مبلغ تخفیف</label>
+                            <input type="number" name="form-${formIndex}-mablagh_takhfif" class="form-control row-discount-amount" readonly placeholder="0">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>مبلغ نهایی</label>
+                            <input type="number" name="form-${formIndex}-mablagh_nahayi" class="form-control row-final-amount" readonly placeholder="0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- فیلدهای مخفی -->
+            <input type="hidden" name="form-${formIndex}-DELETE" value="false">
+            <input type="hidden" name="form-${formIndex}-id" value="">
+        `;
+        
+        container.appendChild(newRow);
+        formIndex++;
+        managementForm.value = formIndex;
+        
+        // اضافه کردن event listeners به فیلدهای جدید
+        addRowEventListeners(newRow);
+    }
+    
+    // تابع حذف ردیف
+    window.deleteRow = function(button) {
+        const row = button.closest('.detail-row');
+        const deleteField = row.querySelector('input[name*="-DELETE"]');
+        if (deleteField) {
+            deleteField.value = 'true';
+            row.style.display = 'none';
+        } else {
+            row.remove();
+        }
+        calculateInvoiceTotal();
+    }
+    
+    // تابع محاسبه جمع ردیف
+    function calculateRowTotal(row) {
+        const quantity = parseFloat(row.querySelector('.quantity-input').value) || 0;
+        const price = parseFloat(row.querySelector('.price-input').value) || 0;
+        const discount = parseFloat(row.querySelector('.discount-input').value) || 0;
+        
+        const total = quantity * price;
+        const discountAmount = total * (discount / 100);
+        const finalAmount = total - discountAmount;
+        
+        row.querySelector('.row-total').value = total.toFixed(2);
+        row.querySelector('.row-discount-amount').value = discountAmount.toFixed(2);
+        row.querySelector('.row-final-amount').value = finalAmount.toFixed(2);
+        
+        return finalAmount;
+    }
+    
+    // تابع محاسبه جمع کل فاکتور
+    function calculateInvoiceTotal() {
+        let invoiceTotal = 0;
+        const visibleRows = document.querySelectorAll('.detail-row:not([style*="display: none"])');
+        
+        visibleRows.forEach(row => {
+            const finalAmount = parseFloat(row.querySelector('.row-final-amount').value) || 0;
+            invoiceTotal += finalAmount;
+        });
+        
+        const generalDiscount = parseFloat(document.querySelector('[name="takhfif"]').value) || 0;
+        const discountAmount = invoiceTotal * (generalDiscount / 100);
+        const finalInvoiceAmount = invoiceTotal - discountAmount;
+        
+        document.getElementById('invoice-total').textContent = invoiceTotal.toFixed(2);
+        document.getElementById('invoice-discount').textContent = discountAmount.toFixed(2);
+        document.getElementById('invoice-final').textContent = finalInvoiceAmount.toFixed(2);
+        
+        // به‌روزرسانی فیلدهای readonly
+        document.querySelector('[name="mablagh_factor"]').value = invoiceTotal.toFixed(2);
+        document.querySelector('[name="mablagh_takhfif"]').value = discountAmount.toFixed(2);
+        document.querySelector('[name="mablagh_nahayi"]').value = finalInvoiceAmount.toFixed(2);
+    }
+    
+    // تابع اضافه کردن event listeners
+    function addRowEventListeners(row) {
+        const quantityInput = row.querySelector('.quantity-input');
+        const priceInput = row.querySelector('.price-input');
+        const discountInput = row.querySelector('.discount-input');
+        
+        [quantityInput, priceInput, discountInput].forEach(input => {
+            if (input) {
+                input.addEventListener('input', function() {
+                    calculateRowTotal(row);
+                    calculateInvoiceTotal();
+                });
+            }
+        });
+    }
+    
+    // اضافه کردن event listeners به ردیف‌های موجود
+    document.querySelectorAll('.detail-row').forEach(row => {
+        addRowEventListeners(row);
+    });
+    
+    // event listener برای تخفیف کلی
+    document.querySelector('[name="takhfif"]').addEventListener('input', calculateInvoiceTotal);
+    
+    // event listener برای دکمه افزودن ردیف
+    addRowBtn.addEventListener('click', addNewRow);
+    
+    // محاسبه اولیه
+    calculateInvoiceTotal();
+});
+</script>
+{% endblock %} 

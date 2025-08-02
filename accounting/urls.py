@@ -65,4 +65,9 @@ urlpatterns = [
     path('purchase/list-dynamic/', views.purchase_list_dynamic, name='purchase_list_dynamic'),
     path('sanad/list-dynamic/', views.sanad_list_dynamic, name='sanad_list_dynamic'),
     path('good/list-dynamic/', views.good_list_dynamic, name='good_list_dynamic'),
+    
+    # ========================================
+    # URL های فاکتور فروش
+    # ========================================
+    path('sale-invoice/create/', views.sale_invoice_create, name='sale_invoice_create'),
 ] 

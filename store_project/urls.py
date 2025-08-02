@@ -43,12 +43,16 @@ urlpatterns = [
     path('persons/settings/', accounting_views.person_settings, name='person_settings'),
     
     # مدیریت کالاها
-    path('goods/', accounting_views.good_list_dynamic, name='good_list'),
+    path('goods/', accounting_views.good_list, name='good_list'),
+    path('goods/new/', accounting_views.good_create, name='good_create'),
+    path('goods/<int:good_id>/', accounting_views.good_detail, name='good_detail'),
+    path('goods/<int:good_id>/edit/', accounting_views.good_update, name='good_update'),
     
     # مدیریت فروش
     path('sales/', accounting_views.sales_list_dynamic, name='sales_list'),
     path('sales/create/', accounting_views.create_sale_invoice, name='create_sale_invoice'),
     path('sales/<int:sale_id>/', accounting_views.sales_detail, name='sales_detail'),
+    path('sale-invoice/create/', accounting_views.sale_invoice_create, name='sale_invoice_create'),
     
     # مدیریت خرید
     path('purchases/', accounting_views.purchase_list_dynamic, name='purchase_list'),

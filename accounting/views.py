@@ -39,7 +39,7 @@ from .models import (
     FactFo, FactFoDetail, Kharid, ChequesRecieve, ChequePay,
     Chequerecievelog, ChequepayLog, GetRecieve, Stores
 )
-from .forms import PersonForm, GoodForm
+from .forms import PersonForm, GoodForm, SaleInvoiceForm, SaleInvoiceDetailFormSet
 
 
 def normalize_persian_text(text):
@@ -1584,7 +1584,7 @@ def good_list_dynamic(request):
         'format_column_value': format_column_value,
     })
     
-    return render(request, 'accounting/good/list_dynamic.html', context)
+    return render(request, 'good_list.html', context)
 
 
 # ========================================
@@ -1823,5 +1823,120 @@ def export_users_passwords(request):
     """صادر کردن لیست کاربران"""
     from .utils import export_users_to_excel
     return export_users_to_excel(request)
+
+
+# ========================================
+# VIEW های فاکتور فروش
+# ========================================
+
+@login_required
+def sale_invoice_create(request):
+    """
+    ایجاد فاکتور فروش جدید
+    """
+    from django.db import transaction
+    from django.db.models import Max
+    from .models import FactFo, FactFoDetail, Kardex, Goodinf
+    
+    if request.method == 'POST':
+        form = SaleInvoiceForm(request.POST)
+        formset = SaleInvoiceDetailFormSet(request.POST, instance=FactFo())
+        
+        if form.is_valid() and formset.is_valid():
+            try:
+                with transaction.atomic():
+                    # ذخیره سربرگ فاکتور
+                    invoice = form.save(commit=False)
+                    
+                    # تولید کد جدید برای فاکتور
+                    max_code_result = FactFo.objects.using('legacy').aggregate(max_code=Max('code'))
+                    max_code = max_code_result.get('max_code') or 0
+                    invoice.code = max_code + 1
+                    
+                    # تنظیم فیلدهای پیش‌فرض
+                    invoice.status = 0  # فعال
+                    invoice.usercreated = request.user.id
+                    invoice.com_index = 1  # پیش‌فرض
+                    invoice.owner = 1  # پیش‌فرض
+                    invoice.salespatterntype = 1  # پیش‌فرض
+                    
+                    # محاسبه جمع کل فاکتور
+                    total_amount = 0
+                    for detail_form in formset:
+                        if detail_form.is_valid() and not detail_form.cleaned_data.get('DELETE', False):
+                            quantity = detail_form.cleaned_data.get('meghdar', 0) or 0
+                            price = detail_form.cleaned_data.get('naghdi', 0) or 0
+                            total_amount += quantity * price
+                    
+                    invoice.mablagh_factor = total_amount
+                    invoice.save(using='legacy')
+                    
+                    # ذخیره جزئیات فاکتور و عملیات انبار
+                    for detail_form in formset:
+                        if detail_form.is_valid() and not detail_form.cleaned_data.get('DELETE', False):
+                            detail = detail_form.save(commit=False)
+                            detail.code = invoice
+                            
+                            # تولید شماره ردیف
+                            max_radif = FactFoDetail.objects.using('legacy').filter(code=invoice).aggregate(max_radif=Max('radif'))
+                            detail.radif = (max_radif.get('max_radif') or 0) + 1
+                            
+                            # تنظیم فیلدهای پیش‌فرض
+                            detail.vaziyat = 0  # فعال
+                            detail.com_index = 1  # پیش‌فرض
+                            detail.type = 1  # فروش
+                            
+                            detail.save(using='legacy')
+                            
+                            # عملیات انبار - ثبت خروجی
+                            if detail.kala_code and detail.an_code and detail.meghdar:
+                                # ایجاد رکورد خروجی در Kardex
+                                kardex = Kardex()
+                                kardex.kala_code = detail.kala_code
+                                kardex.an_code = detail.an_code
+                                kardex.tarikh = invoice.tarikh
+                                kardex.meghdar = -detail.meghdar  # منفی برای خروجی
+                                kardex.naghdi = detail.naghdi
+                                kardex.sharh = f"فروش - فاکتور شماره {invoice.code}"
+                                kardex.type = 2  # خروجی
+                                kardex.vaziyat = 0  # فعال
+                                kardex.com_index = 1  # پیش‌فرض
+                                kardex.save(using='legacy')
+                                
+                                # به‌روزرسانی موجودی کالا
+                                try:
+                                    good = Goodinf.objects.using('legacy').get(code=detail.kala_code)
+                                    good.mogodi = (good.mogodi or 0) - detail.meghdar
+                                    good.save(using='legacy')
+                                except Goodinf.DoesNotExist:
+                                    pass  # کالا پیدا نشد
+                    
+                    messages.success(request, f'فاکتور فروش شماره {invoice.code} با موفقیت ثبت شد.')
+                    messages.info(request, 'سند حسابداری باید صادر شود.')
+                    
+                    return redirect('sale_invoice_detail', invoice_id=invoice.code)
+                    
+            except Exception as e:
+                messages.error(request, f'خطا در ثبت فاکتور: {str(e)}')
+                return render(request, 'sale_invoice_form.html', {
+                    'form': form,
+                    'formset': formset,
+                    'title': 'صدور فاکتور فروش'
+                })
+        else:
+            messages.error(request, 'لطفاً خطاهای فرم را برطرف کنید.')
+    else:
+        form = SaleInvoiceForm()
+        formset = SaleInvoiceDetailFormSet(instance=FactFo())
+    
+    context = {
+        'form': form,
+        'formset': formset,
+        'title': 'صدور فاکتور فروش',
+        'goods': Goodinf.objects.using('legacy').filter(status=0),
+        'stores': Stores.objects.using('legacy').all(),
+    }
+    
+    return render(request, 'sale_invoice_form.html', context)
 
 

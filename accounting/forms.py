@@ -1,7 +1,7 @@
 from django import forms
 from django.forms import ModelForm, inlineformset_factory
 from .models import (
-    FactFo, Kharid, ChequesRecieve, ChequePay,
+    FactFo, FactFoDetail, Kharid, ChequesRecieve, ChequePay,
     Perinf, Goodinf, Sanad, SanadDetail, Pergrp,
     Goodgrps, Units, Stores
 )
@@ -411,4 +411,135 @@ class GoodForm(forms.ModelForm):
         self.fields['status'].widget.choices = [
             (0, 'فعال'),
             (1, 'غیرفعال')
-        ] 
+        ]
+
+
+# ========================================
+# فرم‌های فاکتور فروش
+# ========================================
+
+class SaleInvoiceForm(forms.ModelForm):
+    """فرم اصلی فاکتور فروش"""
+    class Meta:
+        model = FactFo
+        fields = [
+            'shakhs_code', 'visitor_code', 'tarikh', 'sharh', 
+            'takhfif', 'mablagh_factor'
+        ]
+        widgets = {
+            'shakhs_code': forms.Select(attrs={
+                'class': 'form-select',
+                'data-placeholder': 'مشتری را انتخاب کنید...'
+            }),
+            'visitor_code': forms.Select(attrs={
+                'class': 'form-select',
+                'data-placeholder': 'ویزیتور را انتخاب کنید...'
+            }),
+            'tarikh': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'sharh': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'شرح فاکتور...'
+            }),
+            'takhfif': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'placeholder': '0'
+            }),
+            'mablagh_factor': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'readonly': True,
+                'placeholder': '0'
+            }),
+        }
+        labels = {
+            'shakhs_code': 'مشتری',
+            'visitor_code': 'ویزیتور',
+            'tarikh': 'تاریخ فاکتور',
+            'sharh': 'شرح',
+            'takhfif': 'تخفیف کلی (%)',
+            'mablagh_factor': 'جمع کل فاکتور',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # فیلتر کردن مشتریان فعال
+        self.fields['shakhs_code'].queryset = Perinf.objects.using('legacy').filter(status=0)
+        self.fields['shakhs_code'].empty_label = "--- مشتری را انتخاب کنید ---"
+        
+        # فیلتر کردن ویزیتورهای فعال
+        self.fields['visitor_code'].queryset = Perinf.objects.using('legacy').filter(status=0)
+        self.fields['visitor_code'].empty_label = "--- ویزیتور را انتخاب کنید ---"
+        
+        # تنظیم تاریخ پیش‌فرض به امروز
+        if not self.instance.pk:  # فقط برای فرم جدید
+            from datetime import date
+            self.fields['tarikh'].initial = date.today()
+
+
+class SaleInvoiceDetailForm(forms.ModelForm):
+    """فرم جزئیات فاکتور فروش"""
+    class Meta:
+        model = FactFoDetail
+        fields = [
+            'kala_code', 'an_code', 'meghdar', 'naghdi', 
+            'sharh'
+        ]
+        widgets = {
+            'kala_code': forms.Select(attrs={
+                'class': 'form-select good-select',
+                'data-placeholder': 'کالا را انتخاب کنید...'
+            }),
+            'an_code': forms.Select(attrs={
+                'class': 'form-select store-select'
+            }),
+            'meghdar': forms.NumberInput(attrs={
+                'class': 'form-control quantity-input',
+                'step': '0.01',
+                'min': '0.01',
+                'placeholder': '0'
+            }),
+            'naghdi': forms.NumberInput(attrs={
+                'class': 'form-control price-input',
+                'step': '0.01',
+                'min': '0',
+                'placeholder': '0'
+            }),
+            'sharh': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'شرح ردیف...'
+            }),
+        }
+        labels = {
+            'kala_code': 'کالا',
+            'an_code': 'انبار',
+            'meghdar': 'مقدار',
+            'naghdi': 'فی فروش',
+            'sharh': 'شرح',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # فیلتر کردن کالاهای فعال
+        self.fields['kala_code'].queryset = Goodinf.objects.using('legacy').filter(status=0)
+        self.fields['kala_code'].empty_label = "--- کالا را انتخاب کنید ---"
+        
+        # فیلتر کردن انبارهای فعال
+        self.fields['an_code'].queryset = Stores.objects.using('legacy').all()
+        self.fields['an_code'].empty_label = "--- انبار را انتخاب کنید ---"
+
+
+# ایجاد FormSet برای جزئیات فاکتور
+SaleInvoiceDetailFormSet = inlineformset_factory(
+    FactFo,
+    FactFoDetail,
+    form=SaleInvoiceDetailForm,
+    extra=1,  # تعداد ردیف‌های خالی پیش‌فرض
+    can_delete=True,  # امکان حذف ردیف‌ها
+    min_num=1,  # حداقل یک ردیف
+    max_num=50,  # حداکثر 50 ردیف
+) 

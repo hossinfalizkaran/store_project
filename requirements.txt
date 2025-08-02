@@ -1,0 +1,20 @@
+# Django and Core Dependencies
+Django==5.2.4
+djangorestframework==3.14.0
+
+# Database Dependencies
+django-mssql-backend==2.8.1
+pyodbc==5.0.1
+
+# Date and Time Handling
+jdatetime==4.1.1
+pytz==2023.3
+
+# Excel and File Processing
+openpyxl==3.1.2
+
+# Development and Testing
+python-dotenv==1.0.0
+
+# Additional Utilities
+Pillow==10.1.0 
