@@ -37,7 +37,7 @@ from datetime import datetime
 from .models import (
     Perinf, Goodinf, Sanad, SanadDetail, Kardex,
     FactFo, FactFoDetail, Kharid, ChequesRecieve, ChequePay,
-    Chequerecievelog, ChequepayLog, GetRecieve, Stores
+    Chequerecievelog, ChequepayLog, GetRecieve, Stores, Goodgrps
 )
 from .forms import PersonForm, GoodForm, SaleInvoiceForm, SaleInvoiceDetailFormSet
 
@@ -1255,13 +1255,21 @@ def person_update(request, person_id):
 @login_required
 def good_list(request):
     """
-    لیست کالاها با قابلیت جستجو و صفحه‌بندی
+    لیست کالاها با قابلیت جستجو، فیلتر گروه و صفحه‌بندی
     """
     from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
     from django.db.models import Q
     
+    # واکشی تمام گروه‌های کالا برای نمایش در فیلتر
+    good_groups = Goodgrps.objects.using('legacy').all().order_by('code')
+    
     # queryset پایه
     goods_qs = Goodinf.objects.using('legacy').select_related('grpcode', 'unit', 'unit2', 'store').order_by('code')
+    
+    # فیلتر بر اساس گروه کالا
+    selected_group_id = request.GET.get('group', '')
+    if selected_group_id and selected_group_id.isdigit():
+        goods_qs = goods_qs.filter(grpcode_id=selected_group_id)
 
     # منطق جستجو
     search_query = request.GET.get('q', '').strip()
@@ -1286,7 +1294,7 @@ def good_list(request):
 
     # منطق صفحه‌بندی
     page_number = request.GET.get('page', 1)
-    paginator = Paginator(goods_qs, 25)
+    paginator = Paginator(goods_qs, 30)  # افزایش تعداد آیتم‌ها در هر صفحه
 
     try:
         page_obj = paginator.page(page_number)
@@ -1297,6 +1305,8 @@ def good_list(request):
 
     context = {
         'page_obj': page_obj,
+        'good_groups': good_groups,
+        'selected_group_id': selected_group_id,
         'search_query': search_query,
         'total_count': paginator.count,
         'title': 'لیست کالاها',
@@ -1938,5 +1948,481 @@ def sale_invoice_create(request):
     }
     
     return render(request, 'sale_invoice_form.html', context)
+
+
+@login_required
+def good_delete(request, good_code):
+    """
+    حذف کالا با تایید کاربر
+    """
+    good = get_object_or_404(Goodinf.objects.using('legacy'), code=good_code)
+    
+    if request.method == 'POST':
+        good_name = good.name
+        good.delete(using='legacy')
+        messages.success(request, f"کالای '{good_name}' با موفقیت حذف شد.")
+        return redirect('good_list')
+    
+    # برای حذف سریع بدون تایید (ساده‌تر)
+    good_name = good.name
+    good.delete(using='legacy')
+    messages.success(request, f"کالای '{good_name}' با موفقیت حذف شد.")
+    return redirect('good_list')
+
+
+# ========================================
+# View های مدیریت اطلاعات پایه
+# ========================================
+
+# === CRUD برای انبارها (Stores) ===
+@login_required
+def store_list(request):
+    """لیست انبارها"""
+    stores = Stores.objects.using('legacy').all().order_by('code')
+    return render(request, 'generic_list.html', {
+        'objects': stores,
+        'title': 'لیست انبارها',
+        'create_url_name': 'store_create',
+        'update_url_name': 'store_update',
+        'delete_url_name': 'store_delete',
+        'back_url_name': 'home',
+        'headers': ['کد', 'نام انبار', 'توضیحات']
+    })
+
+@login_required
+def store_create(request):
+    """ایجاد انبار جدید"""
+    if request.method == 'POST':
+        form = StoreForm(request.POST)
+        if form.is_valid():
+            form.save(using='legacy')
+            messages.success(request, "انبار جدید با موفقیت ایجاد شد.")
+            return redirect('store_list')
+    else:
+        form = StoreForm()
+    
+    return render(request, 'generic_form.html', {
+        'form': form, 
+        'form_title': 'ایجاد انبار جدید',
+        'back_url_name': 'store_list'
+    })
+
+@login_required
+def store_update(request, pk):
+    """ویرایش انبار"""
+    store = get_object_or_404(Stores.objects.using('legacy'), code=pk)
+    if request.method == 'POST':
+        form = StoreForm(request.POST, instance=store)
+        if form.is_valid():
+            form.save(using='legacy')
+            messages.success(request, "انبار با موفقیت ویرایش شد.")
+            return redirect('store_list')
+    else:
+        form = StoreForm(instance=store)
+    
+    return render(request, 'generic_form.html', {
+        'form': form, 
+        'form_title': 'ویرایش انبار',
+        'back_url_name': 'store_list'
+    })
+
+@login_required
+def store_delete(request, pk):
+    """حذف انبار"""
+    store = get_object_or_404(Stores.objects.using('legacy'), code=pk)
+    store_name = store.name
+    store.delete(using='legacy')
+    messages.success(request, f"انبار '{store_name}' با موفقیت حذف شد.")
+    return redirect('store_list')
+
+# === CRUD برای صندوق‌ها (SandoghTbl) ===
+@login_required
+def sandogh_list(request):
+    """لیست صندوق‌ها"""
+    sandoghs = SandoghTbl.objects.using('legacy').all().order_by('code')
+    return render(request, 'generic_list.html', {
+        'objects': sandoghs,
+        'title': 'لیست صندوق‌ها',
+        'create_url_name': 'sandogh_create',
+        'update_url_name': 'sandogh_update',
+        'delete_url_name': 'sandogh_delete',
+        'back_url_name': 'home',
+        'headers': ['کد', 'نام صندوق', 'توضیحات']
+    })
+
+@login_required
+def sandogh_create(request):
+    """ایجاد صندوق جدید"""
+    if request.method == 'POST':
+        form = SandoghForm(request.POST)
+        if form.is_valid():
+            form.save(using='legacy')
+            messages.success(request, "صندوق جدید با موفقیت ایجاد شد.")
+            return redirect('sandogh_list')
+    else:
+        form = SandoghForm()
+    
+    return render(request, 'generic_form.html', {
+        'form': form, 
+        'form_title': 'ایجاد صندوق جدید',
+        'back_url_name': 'sandogh_list'
+    })
+
+@login_required
+def sandogh_update(request, pk):
+    """ویرایش صندوق"""
+    sandogh = get_object_or_404(SandoghTbl.objects.using('legacy'), code=pk)
+    if request.method == 'POST':
+        form = SandoghForm(request.POST, instance=sandogh)
+        if form.is_valid():
+            form.save(using='legacy')
+            messages.success(request, "صندوق با موفقیت ویرایش شد.")
+            return redirect('sandogh_list')
+    else:
+        form = SandoghForm(instance=sandogh)
+    
+    return render(request, 'generic_form.html', {
+        'form': form, 
+        'form_title': 'ویرایش صندوق',
+        'back_url_name': 'sandogh_list'
+    })
+
+@login_required
+def sandogh_delete(request, pk):
+    """حذف صندوق"""
+    sandogh = get_object_or_404(SandoghTbl.objects.using('legacy'), code=pk)
+    sandogh_name = sandogh.name
+    sandogh.delete(using='legacy')
+    messages.success(request, f"صندوق '{sandogh_name}' با موفقیت حذف شد.")
+    return redirect('sandogh_list')
+
+# === CRUD برای بانک‌ها (Bank) ===
+@login_required
+def bank_list(request):
+    """لیست بانک‌ها"""
+    banks = Bank.objects.using('legacy').all().order_by('code')
+    return render(request, 'generic_list.html', {
+        'objects': banks,
+        'title': 'لیست بانک‌ها',
+        'create_url_name': 'bank_create',
+        'update_url_name': 'bank_update',
+        'delete_url_name': 'bank_delete',
+        'back_url_name': 'home',
+        'headers': ['کد', 'نام بانک', 'شعبه', 'شماره حساب', 'تلفن', 'توضیحات']
+    })
+
+@login_required
+def bank_create(request):
+    """ایجاد بانک جدید"""
+    if request.method == 'POST':
+        form = BankForm(request.POST)
+        if form.is_valid():
+            form.save(using='legacy')
+            messages.success(request, "بانک جدید با موفقیت ایجاد شد.")
+            return redirect('bank_list')
+    else:
+        form = BankForm()
+    
+    return render(request, 'generic_form.html', {
+        'form': form, 
+        'form_title': 'ایجاد بانک جدید',
+        'back_url_name': 'bank_list'
+    })
+
+@login_required
+def bank_update(request, pk):
+    """ویرایش بانک"""
+    bank = get_object_or_404(Bank.objects.using('legacy'), code=pk)
+    if request.method == 'POST':
+        form = BankForm(request.POST, instance=bank)
+        if form.is_valid():
+            form.save(using='legacy')
+            messages.success(request, "بانک با موفقیت ویرایش شد.")
+            return redirect('bank_list')
+    else:
+        form = BankForm(instance=bank)
+    
+    return render(request, 'generic_form.html', {
+        'form': form, 
+        'form_title': 'ویرایش بانک',
+        'back_url_name': 'bank_list'
+    })
+
+@login_required
+def bank_delete(request, pk):
+    """حذف بانک"""
+    bank = get_object_or_404(Bank.objects.using('legacy'), code=pk)
+    bank_name = bank.name
+    bank.delete(using='legacy')
+    messages.success(request, f"بانک '{bank_name}' با موفقیت حذف شد.")
+    return redirect('bank_list')
+
+# === CRUD برای درآمدها (LDaramad) ===
+@login_required
+def income_list(request):
+    """لیست درآمدها"""
+    incomes = LDaramad.objects.using('legacy').all().order_by('code')
+    return render(request, 'generic_list.html', {
+        'objects': incomes,
+        'title': 'لیست درآمدها',
+        'create_url_name': 'income_create',
+        'update_url_name': 'income_update',
+        'delete_url_name': 'income_delete',
+        'back_url_name': 'home',
+        'headers': ['کد', 'عنوان درآمد', 'توضیحات']
+    })
+
+@login_required
+def income_create(request):
+    """ایجاد درآمد جدید"""
+    if request.method == 'POST':
+        form = IncomeForm(request.POST)
+        if form.is_valid():
+            form.save(using='legacy')
+            messages.success(request, "درآمد جدید با موفقیت ایجاد شد.")
+            return redirect('income_list')
+    else:
+        form = IncomeForm()
+    
+    return render(request, 'generic_form.html', {
+        'form': form, 
+        'form_title': 'ایجاد درآمد جدید',
+        'back_url_name': 'income_list'
+    })
+
+@login_required
+def income_update(request, pk):
+    """ویرایش درآمد"""
+    income = get_object_or_404(LDaramad.objects.using('legacy'), code=pk)
+    if request.method == 'POST':
+        form = IncomeForm(request.POST, instance=income)
+        if form.is_valid():
+            form.save(using='legacy')
+            messages.success(request, "درآمد با موفقیت ویرایش شد.")
+            return redirect('income_list')
+    else:
+        form = IncomeForm(instance=income)
+    
+    return render(request, 'generic_form.html', {
+        'form': form, 
+        'form_title': 'ویرایش درآمد',
+        'back_url_name': 'income_list'
+    })
+
+@login_required
+def income_delete(request, pk):
+    """حذف درآمد"""
+    income = get_object_or_404(LDaramad.objects.using('legacy'), code=pk)
+    income_name = income.name
+    income.delete(using='legacy')
+    messages.success(request, f"درآمد '{income_name}' با موفقیت حذف شد.")
+    return redirect('income_list')
+
+# === CRUD برای هزینه‌ها (LHazine) ===
+@login_required
+def expense_list(request):
+    """لیست هزینه‌ها"""
+    expenses = LHazine.objects.using('legacy').all().order_by('code')
+    return render(request, 'generic_list.html', {
+        'objects': expenses,
+        'title': 'لیست هزینه‌ها',
+        'create_url_name': 'expense_create',
+        'update_url_name': 'expense_update',
+        'delete_url_name': 'expense_delete',
+        'back_url_name': 'home',
+        'headers': ['کد', 'عنوان هزینه', 'توضیحات']
+    })
+
+@login_required
+def expense_create(request):
+    """ایجاد هزینه جدید"""
+    if request.method == 'POST':
+        form = ExpenseForm(request.POST)
+        if form.is_valid():
+            form.save(using='legacy')
+            messages.success(request, "هزینه جدید با موفقیت ایجاد شد.")
+            return redirect('expense_list')
+    else:
+        form = ExpenseForm()
+    
+    return render(request, 'generic_form.html', {
+        'form': form, 
+        'form_title': 'ایجاد هزینه جدید',
+        'back_url_name': 'expense_list'
+    })
+
+@login_required
+def expense_update(request, pk):
+    """ویرایش هزینه"""
+    expense = get_object_or_404(LHazine.objects.using('legacy'), code=pk)
+    if request.method == 'POST':
+        form = ExpenseForm(request.POST, instance=expense)
+        if form.is_valid():
+            form.save(using='legacy')
+            messages.success(request, "هزینه با موفقیت ویرایش شد.")
+            return redirect('expense_list')
+    else:
+        form = ExpenseForm(instance=expense)
+    
+    return render(request, 'generic_form.html', {
+        'form': form, 
+        'form_title': 'ویرایش هزینه',
+        'back_url_name': 'expense_list'
+    })
+
+@login_required
+def expense_delete(request, pk):
+    """حذف هزینه"""
+    expense = get_object_or_404(LHazine.objects.using('legacy'), code=pk)
+    expense_name = expense.name
+    expense.delete(using='legacy')
+    messages.success(request, f"هزینه '{expense_name}' با موفقیت حذف شد.")
+    return redirect('expense_list')
+
+# === CRUD برای دوره‌های مالی (Fiscalyear) ===
+@login_required
+def fiscal_year_list(request):
+    """لیست دوره‌های مالی"""
+    fiscal_years = Fiscalyear.objects.using('legacy').all().order_by('id')
+    return render(request, 'generic_list.html', {
+        'objects': fiscal_years,
+        'title': 'لیست دوره‌های مالی',
+        'create_url_name': 'fiscal_year_create',
+        'update_url_name': 'fiscal_year_update',
+        'delete_url_name': 'fiscal_year_delete',
+        'back_url_name': 'home',
+        'headers': ['کد', 'عنوان دوره', 'تاریخ شروع', 'تاریخ پایان', 'فعال', 'توضیحات']
+    })
+
+@login_required
+def fiscal_year_create(request):
+    """ایجاد دوره مالی جدید"""
+    if request.method == 'POST':
+        form = FiscalYearForm(request.POST)
+        if form.is_valid():
+            form.save(using='legacy')
+            messages.success(request, "دوره مالی جدید با موفقیت ایجاد شد.")
+            return redirect('fiscal_year_list')
+    else:
+        form = FiscalYearForm()
+    
+    return render(request, 'generic_form.html', {
+        'form': form, 
+        'form_title': 'ایجاد دوره مالی جدید',
+        'back_url_name': 'fiscal_year_list'
+    })
+
+@login_required
+def fiscal_year_update(request, pk):
+    """ویرایش دوره مالی"""
+    fiscal_year = get_object_or_404(Fiscalyear.objects.using('legacy'), id=pk)
+    if request.method == 'POST':
+        form = FiscalYearForm(request.POST, instance=fiscal_year)
+        if form.is_valid():
+            form.save(using='legacy')
+            messages.success(request, "دوره مالی با موفقیت ویرایش شد.")
+            return redirect('fiscal_year_list')
+    else:
+        form = FiscalYearForm(instance=fiscal_year)
+    
+    return render(request, 'generic_form.html', {
+        'form': form, 
+        'form_title': 'ویرایش دوره مالی',
+        'back_url_name': 'fiscal_year_list'
+    })
+
+@login_required
+def fiscal_year_delete(request, pk):
+    """حذف دوره مالی"""
+    fiscal_year = get_object_or_404(Fiscalyear.objects.using('legacy'), id=pk)
+    fiscal_year_title = fiscal_year.title
+    fiscal_year.delete(using='legacy')
+    messages.success(request, f"دوره مالی '{fiscal_year_title}' با موفقیت حذف شد.")
+    return redirect('fiscal_year_list')
+
+# === CRUD برای دسته چک‌ها (CheckBand) ===
+@login_required
+def check_band_list(request):
+    """لیست دسته چک‌ها"""
+    check_bands = CheckBand.objects.using('legacy').all().order_by('id')
+    return render(request, 'generic_list.html', {
+        'objects': check_bands,
+        'title': 'لیست دسته چک‌ها',
+        'create_url_name': 'check_band_create',
+        'update_url_name': 'check_band_update',
+        'delete_url_name': 'check_band_delete',
+        'back_url_name': 'home',
+        'headers': ['بانک', 'سریال', 'از شماره', 'تا شماره', 'تاریخ', 'توضیحات']
+    })
+
+@login_required
+def check_band_create(request):
+    """ایجاد دسته چک جدید"""
+    if request.method == 'POST':
+        form = CheckBandForm(request.POST)
+        if form.is_valid():
+            form.save(using='legacy')
+            messages.success(request, "دسته چک جدید با موفقیت ایجاد شد.")
+            return redirect('check_band_list')
+    else:
+        form = CheckBandForm()
+    
+    return render(request, 'generic_form.html', {
+        'form': form, 
+        'form_title': 'ایجاد دسته چک جدید',
+        'back_url_name': 'check_band_list'
+    })
+
+@login_required
+def check_band_update(request, pk):
+    """ویرایش دسته چک"""
+    check_band = get_object_or_404(CheckBand.objects.using('legacy'), id=pk)
+    if request.method == 'POST':
+        form = CheckBandForm(request.POST, instance=check_band)
+        if form.is_valid():
+            form.save(using='legacy')
+            messages.success(request, "دسته چک با موفقیت ویرایش شد.")
+            return redirect('check_band_list')
+    else:
+        form = CheckBandForm(instance=check_band)
+    
+    return render(request, 'generic_form.html', {
+        'form': form, 
+        'form_title': 'ویرایش دسته چک',
+        'back_url_name': 'check_band_list'
+    })
+
+@login_required
+def check_band_delete(request, pk):
+    """حذف دسته چک"""
+    check_band = get_object_or_404(CheckBand.objects.using('legacy'), id=pk)
+    check_band_serial = check_band.serial
+    check_band.delete(using='legacy')
+    messages.success(request, f"دسته چک '{check_band_serial}' با موفقیت حذف شد.")
+    return redirect('check_band_list')
+
+# === ویرایش مشخصات شرکت (فقط Update) ===
+@login_required
+def company_info_update(request):
+    """ویرایش مشخصات شرکت"""
+    company_info = InfCo.objects.using('legacy').first()
+    if not company_info:
+        # اگر رکوردی وجود ندارد، یک رکورد جدید ایجاد کن
+        company_info = InfCo.objects.using('legacy').create()
+    
+    if request.method == 'POST':
+        form = CompanyInfoForm(request.POST, instance=company_info)
+        if form.is_valid():
+            form.save(using='legacy')
+            messages.success(request, "مشخصات شرکت با موفقیت به‌روز شد.")
+            return redirect('home')
+    else:
+        form = CompanyInfoForm(instance=company_info)
+    
+    return render(request, 'generic_form.html', {
+        'form': form, 
+        'form_title': 'ویرایش مشخصات شرکت',
+        'back_url_name': 'home'
+    })
 
 

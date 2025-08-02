@@ -2707,6 +2707,9 @@ class Goodgrps(models.Model):
     name = models.CharField(db_column='Name', max_length=50, blank=True, null=True)  # Field name made lowercase.
     comment = models.CharField(db_column='Comment', max_length=500, blank=True, null=True)  # Field name made lowercase.
 
+    def __str__(self):
+        return self.name if self.name else f"گروه کد {self.code}"
+
     class Meta:
         managed = False
         db_table = 'GoodGrps'
@@ -4318,6 +4321,9 @@ class Pergrp(models.Model):
     status = models.SmallIntegerField(db_column='Status', blank=True, null=True)  # Field name made lowercase.
     sell_defaultcostlevel = models.IntegerField(db_column='Sell_DefaultCostLevel', blank=True, null=True)  # Field name made lowercase.
     buy_defaultcostlevel = models.IntegerField(db_column='Buy_DefaultCostLevel', blank=True, null=True)  # Field name made lowercase.
+
+    def __str__(self):
+        return self.name if self.name else f"گروه شخص کد {self.code}"
 
     class Meta:
         managed = False
@@ -6470,6 +6476,9 @@ class Stores(models.Model):
     comment = models.CharField(db_column='Comment', max_length=500, blank=True, null=True)  # Field name made lowercase.
     mogodi = models.DecimalField(db_column='Mogodi', max_digits=23, decimal_places=9, blank=True, null=True)  # Field name made lowercase.
 
+    def __str__(self):
+        return self.name if self.name else f"انبار کد {self.code}"
+
     class Meta:
         managed = False
         db_table = 'Stores'
@@ -7309,6 +7318,9 @@ class Units(models.Model):
     comment = models.CharField(db_column='Comment', max_length=500, blank=True, null=True)  # Field name made lowercase.
     type = models.SmallIntegerField(db_column='Type', blank=True, null=True)  # Field name made lowercase.
     unittin = models.CharField(db_column='UnitTIN', max_length=50, blank=True, null=True)  # Field name made lowercase.
+
+    def __str__(self):
+        return self.name if self.name else f"واحد کد {self.code}"
 
     class Meta:
         managed = False

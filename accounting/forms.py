@@ -3,7 +3,7 @@ from django.forms import ModelForm, inlineformset_factory
 from .models import (
     FactFo, FactFoDetail, Kharid, ChequesRecieve, ChequePay,
     Perinf, Goodinf, Sanad, SanadDetail, Pergrp,
-    Goodgrps, Units, Stores
+    Goodgrps, Units, Stores, SandoghTbl, Bank, Ldaramad, LHazine, InfCo, Fiscalyear, Checkband
 )
 
 
@@ -543,3 +543,145 @@ SaleInvoiceDetailFormSet = inlineformset_factory(
     min_num=1,  # حداقل یک ردیف
     max_num=50,  # حداکثر 50 ردیف
 ) 
+
+# ========================================
+# فرم‌های مدیریت اطلاعات پایه
+# ========================================
+
+class StoreForm(forms.ModelForm):
+    class Meta:
+        model = Stores
+        fields = ['code', 'name', 'comment']
+        labels = {'code': 'کد انبار', 'name': 'نام انبار', 'comment': 'توضیحات'}
+        widgets = {
+            'code': forms.NumberInput(attrs={'class': 'form-control'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+class SandoghForm(forms.ModelForm):
+    class Meta:
+        model = SandoghTbl
+        fields = ['code', 'name', 'comment']
+        labels = {'code': 'کد صندوق', 'name': 'نام صندوق', 'comment': 'توضیحات'}
+        widgets = {
+            'code': forms.NumberInput(attrs={'class': 'form-control'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+class BankForm(forms.ModelForm):
+    class Meta:
+        model = Bank
+        fields = ['code', 'name', 'shobe', 'sh_h', 'tel', 'comment']
+        labels = {
+            'code': 'کد بانک', 
+            'name': 'نام بانک', 
+            'shobe': 'شعبه', 
+            'sh_h': 'شماره حساب', 
+            'tel': 'تلفن', 
+            'comment': 'توضیحات'
+        }
+        widgets = {
+            'code': forms.NumberInput(attrs={'class': 'form-control'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'shobe': forms.TextInput(attrs={'class': 'form-control'}),
+            'sh_h': forms.TextInput(attrs={'class': 'form-control'}),
+            'tel': forms.TextInput(attrs={'class': 'form-control'}),
+            'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+class IncomeForm(forms.ModelForm):
+    class Meta:
+        model = Ldaramad
+        fields = ['code', 'name', 'comment']
+        labels = {'code': 'کد درآمد', 'name': 'عنوان درآمد', 'comment': 'توضیحات'}
+        widgets = {
+            'code': forms.NumberInput(attrs={'class': 'form-control'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+class ExpenseForm(forms.ModelForm):
+    class Meta:
+        model = LHazine
+        fields = ['code', 'name', 'comment']
+        labels = {'code': 'کد هزینه', 'name': 'عنوان هزینه', 'comment': 'توضیحات'}
+        widgets = {
+            'code': forms.NumberInput(attrs={'class': 'form-control'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+class CompanyInfoForm(forms.ModelForm):
+    class Meta:
+        model = InfCo
+        fields = ['name_co', 'tel', 'addr', 'economicno', 'ymali', 'tel2', 'regno', 'postcode_high', 'postcode_low', 'jobdescription', 'sh_meli']
+        labels = {
+            'name_co': 'نام شرکت', 
+            'tel': 'تلفن', 
+            'addr': 'آدرس', 
+            'economicno': 'کد اقتصادی',
+            'ymali': 'سال مالی',
+            'tel2': 'تلفن دوم',
+            'regno': 'شماره ثبت',
+            'postcode_high': 'کد پستی بالا',
+            'postcode_low': 'کد پستی پایین',
+            'jobdescription': 'شرح شغل',
+            'sh_meli': 'شماره ملی'
+        }
+        widgets = {
+            'name_co': forms.TextInput(attrs={'class': 'form-control'}),
+            'tel': forms.TextInput(attrs={'class': 'form-control'}),
+            'addr': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'economicno': forms.TextInput(attrs={'class': 'form-control'}),
+            'ymali': forms.TextInput(attrs={'class': 'form-control'}),
+            'tel2': forms.TextInput(attrs={'class': 'form-control'}),
+            'regno': forms.TextInput(attrs={'class': 'form-control'}),
+            'postcode_high': forms.TextInput(attrs={'class': 'form-control'}),
+            'postcode_low': forms.TextInput(attrs={'class': 'form-control'}),
+            'jobdescription': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'sh_meli': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+class FiscalYearForm(forms.ModelForm):
+    class Meta:
+        model = Fiscalyear
+        fields = ['id', 'title', 'datestart', 'dateend', 'active', 'comment']
+        labels = {
+            'id': 'کد دوره', 
+            'title': 'عنوان دوره مالی', 
+            'datestart': 'تاریخ شروع', 
+            'dateend': 'تاریخ پایان', 
+            'active': 'دوره فعال', 
+            'comment': 'توضیحات'
+        }
+        widgets = {
+            'id': forms.HiddenInput(),
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'datestart': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'dateend': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+class CheckBandForm(forms.ModelForm):
+    class Meta:
+        model = Checkband
+        fields = ['bankcode', 'serial', 'fromnum', 'tonum', 'date', 'comment']
+        labels = {
+            'bankcode': 'بانک', 
+            'serial': 'سریال دسته چک', 
+            'fromnum': 'از شماره', 
+            'tonum': 'تا شماره', 
+            'date': 'تاریخ دریافت', 
+            'comment': 'توضیحات'
+        }
+        widgets = {
+            'bankcode': forms.Select(attrs={'class': 'form-select'}),
+            'serial': forms.TextInput(attrs={'class': 'form-control'}),
+            'fromnum': forms.NumberInput(attrs={'class': 'form-control'}),
+            'tonum': forms.NumberInput(attrs={'class': 'form-control'}),
+            'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        } 
