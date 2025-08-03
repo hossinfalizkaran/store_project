@@ -28,7 +28,7 @@ from .models import (
 from .forms import (
     PersonForm, GoodForm, StoreForm, SandoghForm, BankForm,
     IncomeForm, ExpenseForm, CompanyInfoForm, FiscalYearForm, CheckBandForm,
-    SaleInvoiceForm, SaleInvoiceDetailFormSet, LoginForm
+    SaleInvoiceForm, SaleInvoiceDetailFormSet
 )
 from .custom_user import LegacyUser
 
@@ -774,30 +774,31 @@ def sanad_detail(request, sanad_id):
     return render(request, 'sanad_detail.html')
 
 def login_view(request):
+    # این ویو دیگر نیازی به forms.py ندارد
     if request.method == 'POST':
-        form = LoginForm(request.POST)
-        if form.is_valid():
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
-            user = authenticate(request, username=username, password=password)
-            
-            if user is not None:
-                login(request, user)
-                messages.success(request, f'خوش آمدید {user.name}!')
-                # اگر پارامتر next وجود داشت، به آن آدرس برو
-                next_url = request.GET.get('next', 'accounting:home')
-                return redirect(next_url)
-            else:
-                # اگر authenticate شکست خورد، یک خطا به فرم اضافه می‌کنیم
-                messages.error(request, 'نام کاربری یا رمز عبور اشتباه است یا کاربر غیرفعال است.')
-        else:
-             messages.error(request, 'لطفاً هر دو فیلد را پر کنید.')
-    else:
-        form = LoginForm()
+        username = request.POST.get('username')
+        password = request.POST.get('password')
 
+        # بررسی اینکه آیا نام کاربری و رمز عبور ارسال شده‌اند
+        if not username or not password:
+            messages.error(request, 'لطفاً نام کاربری و رمز عبور را وارد کنید.')
+            return redirect('accounting:login')
+
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            login(request, user)
+            messages.success(request, f'خوش آمدید {user.name}!')
+            next_url = request.GET.get('next', 'accounting:home')
+            return redirect(next_url)
+        else:
+            messages.error(request, 'نام کاربری یا رمز عبور اشتباه است یا کاربر غیرفعال است.')
+            # در صورت شکست، به همان صفحه لاگین برگرد
+            return redirect('accounting:login')
+    
+    # در حالت GET، فقط لیست کاربران را برای نمایش می‌فرستیم
     user_choices = get_active_users_for_login()
     context = {
-        'form': form, # فرم را به context اضافه می‌کنیم
         'user_choices': user_choices
     }
     return render(request, 'login.html', context)

@@ -135,125 +135,67 @@
 {% endblock %}
 
 {% block content %}
-<div class="login-container">
-    <div class="login-logo">
-        <i class="bi bi-calculator"></i>
-    </div>
-    
-    <div class="login-title">ورود به سیستم</div>
-    <div class="login-subtitle">سیستم مدیریت حسابداری محک</div>
-    
-    <!-- نمایش پیام‌های خطا و موفقیت -->
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}">
-                {{ message }}
+<div class="container">
+    <div class="row justify-content-center align-items-center min-vh-100">
+        <div class="col-md-6 col-lg-4">
+            <div class="text-center mb-4">
+                <i class="bi bi-calculator-fill" style="font-size: 3rem; color: #6d28d9;"></i>
+                <h1 class="h3 mb-1 fw-normal">ورود به سیستم</h1>
+                <p class="text-muted">سیستم مدیریت حسابداری محک</p>
             </div>
-        {% endfor %}
-    {% endif %}
-    
-    <form method="post" class="login-form" action="{% url 'accounting:login' %}">
-        {% csrf_token %}
-        
-        <!-- نمایش خطاهای کلی فرم (non-field errors) -->
-        {% if form.non_field_errors %}
-            <div class="alert alert-danger">
-                {% for error in form.non_field_errors %}
-                    <p>{{ error }}</p>
+
+            <!-- نمایش پیام‌های خطا و موفقیت -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 {% endfor %}
+            {% endif %}
+
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <form method="post" action="{% url 'accounting:login' %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            {% if user_choices %}
+                            <select class="form-select" id="username" name="username" required autofocus>
+                                <option value="" selected disabled>... یک کاربر را انتخاب کنید ...</option>
+                                {% for choice in user_choices %}
+                                    <option value="{{ choice }}">{{ choice }}</option>
+                                {% endfor %}
+                            </select>
+                            {% else %}
+                            <input type="text" class="form-control" name="username" placeholder="نام کاربری" required autofocus>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <input type="password" class="form-control" name="password" placeholder="رمز عبور" required>
+                        </div>
+                        
+                        <button class="w-100 btn btn-lg btn-primary" type="submit">ورود به سیستم</button>
+                    </form>
+                </div>
             </div>
-        {% endif %}
 
-        <!-- Dropdown برای انتخاب کاربر -->
-        {% if user_choices %}
-        <div class="form-floating user-selector">
-            <select class="form-select" id="userSelector">
-                <option value="" selected disabled>... یک کاربر را انتخاب کنید ...</option>
-                {% for choice in user_choices %}
-                    <option value="{{ choice }}">{{ choice }}</option>
-                {% endfor %}
-            </select>
-            <label for="userSelector">
-                <i class="bi bi-person"></i>
-                انتخاب کاربر
-            </label>
-        </div>
-        {% endif %}
-
-        <!-- رندر کردن فیلدهای فرم جنگو -->
-        <div class="form-floating mb-3">
-            {{ form.username }}
-            <label for="{{ form.username.id_for_label }}">نام کاربری</label>
-            {% if form.username.errors %}
-                <div class="text-danger small mt-1">{{ form.username.errors.as_text }}</div>
-            {% endif %}
-        </div>
-        
-        <div class="form-floating mb-3">
-            {{ form.password }}
-            <label for="{{ form.password.id_for_label }}">رمز عبور</label>
-            {% if form.password.errors %}
-                <div class="text-danger small mt-1">{{ form.password.errors.as_text }}</div>
-            {% endif %}
-        </div>
-        
-        <button type="submit" class="btn btn-primary btn-login">
-            <i class="bi bi-box-arrow-in-right"></i>
-            ورود به سیستم
-        </button>
-    </form>
-    
-    <div class="system-info">
-        <div class="system-title">سیستم حسابداری محک</div>
-        <div class="system-version">نسخه 1.0 - طراحی شده با Django</div>
-        <div class="system-version mt-2">
-            <small class="text-muted">
-                <i class="bi bi-info-circle"></i>
-                Master Key: <code>masterkey123</code>
-            </small>
+            <div class="text-center text-muted mt-4 small">
+                <p>نسخه ۱.۰ - طراحی شده با Django</p>
+                <p data-bs-toggle="tooltip" data-bs-placement="top" title="برای ورود در محیط توسعه، از این رمز برای هر کاربری می‌توانید استفاده کنید.">
+                    Master Key: <code class="user-select-all">masterkey123</code> <i class="bi bi-info-circle"></i>
+                </p>
+            </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const userSelector = document.getElementById('userSelector');
-    const usernameInput = document.getElementById('id_username'); // ID پیش‌فرض جنگو
-    
-    if (userSelector && usernameInput) {
-        userSelector.addEventListener('change', function() {
-            if (this.value) {
-                usernameInput.value = this.value;
-            }
-        });
-    }
-    
-    // انیمیشن ورود
-    const loginContainer = document.querySelector('.login-container');
-    loginContainer.style.opacity = '0';
-    loginContainer.style.transform = 'translateY(20px)';
-    
-    setTimeout(() => {
-        loginContainer.style.transition = 'all 0.5s ease';
-        loginContainer.style.opacity = '1';
-        loginContainer.style.transform = 'translateY(0)';
-    }, 100);
-    
-    // اضافه کردن کلیدهای میانبر
-    document.addEventListener('keydown', function(e) {
-        // Enter برای ارسال فرم
-        if (e.key === 'Enter' && document.activeElement.tagName !== 'TEXTAREA') {
-            e.preventDefault();
-            document.querySelector('.login-form').submit();
-        }
-        
-        // Tab برای حرکت بین فیلدها
-        if (e.key === 'Tab') {
-            // اجازه حرکت طبیعی بین فیلدها
-        }
-    });
-});
+    // فعال‌سازی تولتیپ‌های بوت‌استرپ
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
 </script>
 {% endblock %} 

@@ -678,18 +678,4 @@ class CheckBandForm(forms.ModelForm):
             'tonum': forms.NumberInput(attrs={'class': 'form-control'}),
             'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-        }
-
-# ========================================
-# فرم لاگین
-# ========================================
-
-class LoginForm(forms.Form):
-    username = forms.CharField(
-        label="نام کاربری",
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'نام کاربری خود را وارد کنید'})
-    )
-    password = forms.CharField(
-        label="رمز عبور",
-        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'رمز عبور خود را وارد کنید'})
-    ) 
+        } 
