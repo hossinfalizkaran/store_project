@@ -8816,4 +8816,8 @@ class VoiceSendMessages(models.Model):
         db_table = 'voice_send_messages'
 
 
+# Import the custom user model to make it available to Django
+from .custom_user import LegacyUser
+
+
 
