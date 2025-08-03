@@ -20,7 +20,7 @@ class LoginRequiredMiddleware:
         
         # اگر صفحه معاف نیست و کاربر لاگین نکرده، به صفحه لاگین هدایت کن
         if not is_exempt and not request.user.is_authenticated:
-            return redirect('login')
+            return redirect('accounting:login')
         
         response = self.get_response(request)
         return response 

@@ -1220,7 +1220,7 @@ def person_create(request):
 
             person.save(using='legacy')
             messages.success(request, f"شخص '{person.fullname}' با موفقیت ایجاد شد.")
-            return redirect('person_list')
+            return redirect('accounting:person_list')
         else:
             # اگر فرم معتبر نبود، پیام خطا را نمایش بده
             messages.error(request, "لطفاً خطاهای فرم را برطرف کنید.")
@@ -1246,7 +1246,7 @@ def person_update(request, person_id):
             updated_person.save(using='legacy')
 
             messages.success(request, f"اطلاعات شخص '{person.fullname}' با موفقیت ویرایش شد.")
-            return redirect('person_detail', person_id=person.code)
+            return redirect('accounting:person_detail', person_id=person.code)
         else:
             # اگر فرم معتبر نبود، پیام خطا را نمایش بده
             messages.error(request, "لطفاً خطاهای فرم را برطرف کنید.")
@@ -1371,7 +1371,7 @@ def good_create(request):
             # استفاده از دیتابیس legacy
             good.save(using='legacy')
             messages.success(request, f'کالای "{good.name or good.code}" با موفقیت ایجاد شد.')
-            return redirect('good_list')
+            return redirect('accounting:good_list')
     else:
         form = GoodForm()
     
@@ -1401,7 +1401,7 @@ def good_update(request, good_id):
             # استفاده از دیتابیس legacy
             good.save(using='legacy')
             messages.success(request, f'اطلاعات کالای "{good.name or good.code}" با موفقیت بروزرسانی شد.')
-            return redirect('good_detail', good_id=good.code)
+            return redirect('accounting:good_detail', good_id=good.code)
     else:
         form = GoodForm(instance=good)
     
@@ -1781,7 +1781,7 @@ def login_view(request):
             print(f"DEBUG: Login successful for user: {user.name}")
             messages.success(request, f'خوش آمدید {user.name}!')
             print(f"DEBUG: Redirecting to home page")
-            return redirect('home')
+            return redirect('accounting:home')
         else:
             print(f"DEBUG: Login failed for username: {username}")
             messages.error(request, 'نام کاربری یا رمز عبور اشتباه است یا کاربر غیرفعال است.')
@@ -1799,7 +1799,7 @@ def logout_view(request):
     """خروج از سیستم"""
     logout(request)  # از تابع logout جنگو استفاده کن
     messages.success(request, 'خروج موفقیت‌آمیز')
-    return redirect('login')
+    return redirect('accounting:login')
 
 
 # ========================================
@@ -1974,13 +1974,13 @@ def good_delete(request, good_code):
         good_name = good.name
         good.delete(using='legacy')
         messages.success(request, f"کالای '{good_name}' با موفقیت حذف شد.")
-        return redirect('good_list')
+        return redirect('accounting:good_list')
     
     # برای حذف سریع بدون تایید (ساده‌تر)
     good_name = good.name
     good.delete(using='legacy')
     messages.success(request, f"کالای '{good_name}' با موفقیت حذف شد.")
-    return redirect('good_list')
+    return redirect('accounting:good_list')
 
 
 # ========================================
@@ -2010,7 +2010,7 @@ def store_create(request):
         if form.is_valid():
             form.save(using='legacy')
             messages.success(request, "انبار جدید با موفقیت ایجاد شد.")
-            return redirect('store_list')
+            return redirect('accounting:store_list')
     else:
         form = StoreForm()
     
@@ -2029,7 +2029,7 @@ def store_update(request, pk):
         if form.is_valid():
             form.save(using='legacy')
             messages.success(request, "انبار با موفقیت ویرایش شد.")
-            return redirect('store_list')
+            return redirect('accounting:store_list')
     else:
         form = StoreForm(instance=store)
     
@@ -2046,7 +2046,7 @@ def store_delete(request, pk):
     store_name = store.name
     store.delete(using='legacy')
     messages.success(request, f"انبار '{store_name}' با موفقیت حذف شد.")
-    return redirect('store_list')
+    return redirect('accounting:store_list')
 
 # === CRUD برای صندوق‌ها (SandoghTbl) ===
 @login_required
@@ -2071,7 +2071,7 @@ def sandogh_create(request):
         if form.is_valid():
             form.save(using='legacy')
             messages.success(request, "صندوق جدید با موفقیت ایجاد شد.")
-            return redirect('sandogh_list')
+            return redirect('accounting:sandogh_list')
     else:
         form = SandoghForm()
     
@@ -2090,7 +2090,7 @@ def sandogh_update(request, pk):
         if form.is_valid():
             form.save(using='legacy')
             messages.success(request, "صندوق با موفقیت ویرایش شد.")
-            return redirect('sandogh_list')
+            return redirect('accounting:sandogh_list')
     else:
         form = SandoghForm(instance=sandogh)
     
@@ -2107,7 +2107,7 @@ def sandogh_delete(request, pk):
     sandogh_name = sandogh.name
     sandogh.delete(using='legacy')
     messages.success(request, f"صندوق '{sandogh_name}' با موفقیت حذف شد.")
-    return redirect('sandogh_list')
+    return redirect('accounting:sandogh_list')
 
 # === CRUD برای بانک‌ها (Bank) ===
 @login_required
@@ -2132,7 +2132,7 @@ def bank_create(request):
         if form.is_valid():
             form.save(using='legacy')
             messages.success(request, "بانک جدید با موفقیت ایجاد شد.")
-            return redirect('bank_list')
+            return redirect('accounting:bank_list')
     else:
         form = BankForm()
     
@@ -2151,7 +2151,7 @@ def bank_update(request, pk):
         if form.is_valid():
             form.save(using='legacy')
             messages.success(request, "بانک با موفقیت ویرایش شد.")
-            return redirect('bank_list')
+            return redirect('accounting:bank_list')
     else:
         form = BankForm(instance=bank)
     
@@ -2168,7 +2168,7 @@ def bank_delete(request, pk):
     bank_name = bank.name
     bank.delete(using='legacy')
     messages.success(request, f"بانک '{bank_name}' با موفقیت حذف شد.")
-    return redirect('bank_list')
+    return redirect('accounting:bank_list')
 
 # === CRUD برای درآمدها (LDaramad) ===
 @login_required
@@ -2193,7 +2193,7 @@ def income_create(request):
         if form.is_valid():
             form.save(using='legacy')
             messages.success(request, "درآمد جدید با موفقیت ایجاد شد.")
-            return redirect('income_list')
+            return redirect('accounting:income_list')
     else:
         form = IncomeForm()
     
@@ -2212,7 +2212,7 @@ def income_update(request, pk):
         if form.is_valid():
             form.save(using='legacy')
             messages.success(request, "درآمد با موفقیت ویرایش شد.")
-            return redirect('income_list')
+            return redirect('accounting:income_list')
     else:
         form = IncomeForm(instance=income)
     
@@ -2229,7 +2229,7 @@ def income_delete(request, pk):
     income_name = income.name
     income.delete(using='legacy')
     messages.success(request, f"درآمد '{income_name}' با موفقیت حذف شد.")
-    return redirect('income_list')
+    return redirect('accounting:income_list')
 
 # === CRUD برای هزینه‌ها (LHazine) ===
 @login_required
@@ -2254,7 +2254,7 @@ def expense_create(request):
         if form.is_valid():
             form.save(using='legacy')
             messages.success(request, "هزینه جدید با موفقیت ایجاد شد.")
-            return redirect('expense_list')
+            return redirect('accounting:expense_list')
     else:
         form = ExpenseForm()
     
@@ -2273,7 +2273,7 @@ def expense_update(request, pk):
         if form.is_valid():
             form.save(using='legacy')
             messages.success(request, "هزینه با موفقیت ویرایش شد.")
-            return redirect('expense_list')
+            return redirect('accounting:expense_list')
     else:
         form = ExpenseForm(instance=expense)
     
@@ -2290,7 +2290,7 @@ def expense_delete(request, pk):
     expense_name = expense.name
     expense.delete(using='legacy')
     messages.success(request, f"هزینه '{expense_name}' با موفقیت حذف شد.")
-    return redirect('expense_list')
+    return redirect('accounting:expense_list')
 
 # === CRUD برای دوره‌های مالی (Fiscalyear) ===
 @login_required
@@ -2315,7 +2315,7 @@ def fiscal_year_create(request):
         if form.is_valid():
             form.save(using='legacy')
             messages.success(request, "دوره مالی جدید با موفقیت ایجاد شد.")
-            return redirect('fiscal_year_list')
+            return redirect('accounting:fiscal_year_list')
     else:
         form = FiscalYearForm()
     
@@ -2334,7 +2334,7 @@ def fiscal_year_update(request, pk):
         if form.is_valid():
             form.save(using='legacy')
             messages.success(request, "دوره مالی با موفقیت ویرایش شد.")
-            return redirect('fiscal_year_list')
+            return redirect('accounting:fiscal_year_list')
     else:
         form = FiscalYearForm(instance=fiscal_year)
     
@@ -2351,7 +2351,7 @@ def fiscal_year_delete(request, pk):
     fiscal_year_title = fiscal_year.title
     fiscal_year.delete(using='legacy')
     messages.success(request, f"دوره مالی '{fiscal_year_title}' با موفقیت حذف شد.")
-    return redirect('fiscal_year_list')
+    return redirect('accounting:fiscal_year_list')
 
 # === CRUD برای دسته چک‌ها (CheckBand) ===
 @login_required
@@ -2376,7 +2376,7 @@ def check_band_create(request):
         if form.is_valid():
             form.save(using='legacy')
             messages.success(request, "دسته چک جدید با موفقیت ایجاد شد.")
-            return redirect('check_band_list')
+            return redirect('accounting:check_band_list')
     else:
         form = CheckBandForm()
     
@@ -2395,7 +2395,7 @@ def check_band_update(request, pk):
         if form.is_valid():
             form.save(using='legacy')
             messages.success(request, "دسته چک با موفقیت ویرایش شد.")
-            return redirect('check_band_list')
+            return redirect('accounting:check_band_list')
     else:
         form = CheckBandForm(instance=check_band)
     
@@ -2412,7 +2412,7 @@ def check_band_delete(request, pk):
     check_band_serial = check_band.serial
     check_band.delete(using='legacy')
     messages.success(request, f"دسته چک '{check_band_serial}' با موفقیت حذف شد.")
-    return redirect('check_band_list')
+    return redirect('accounting:check_band_list')
 
 # === ویرایش مشخصات شرکت (فقط Update) ===
 @login_required
@@ -2428,7 +2428,7 @@ def company_info_update(request):
         if form.is_valid():
             form.save(using='legacy')
             messages.success(request, "مشخصات شرکت با موفقیت به‌روز شد.")
-            return redirect('home')
+            return redirect('accounting:home')
     else:
         form = CompanyInfoForm(instance=company_info)
     

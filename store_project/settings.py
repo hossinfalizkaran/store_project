@@ -163,13 +163,13 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # ========================================
 
 # آدرس صفحه لاگین سفارشی
-LOGIN_URL = 'login'
+LOGIN_URL = 'accounting:login'
 
 # آدرس هدایت بعد از لاگین موفق
-LOGIN_REDIRECT_URL = 'home'
+LOGIN_REDIRECT_URL = 'accounting:home'
 
 # آدرس هدایت بعد از لاگ‌اوت
-LOGOUT_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = 'accounting:home'
 
 # تنظیمات Session
 SESSION_COOKIE_AGE = 3600  # 1 ساعت
