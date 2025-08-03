@@ -2,6 +2,7 @@
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
+from django.utils import timezone
 
 class LegacyUserManager(BaseUserManager):
     # این متدها برای سازگاری لازم هستند اما ما از آنها استفاده نمی‌کنیم
@@ -51,15 +52,15 @@ class LegacyUser(AbstractBaseUser):
         """متد get_username را برای سازگاری بیشتر بازنویسی می‌کنیم."""
         return self.name
 
+    # --- Override last_login property to avoid database queries ---
+    @property
+    def last_login(self):
+        """Return None for last_login to avoid database queries."""
+        return None
+
     class Meta:
         managed = False
         db_table = 'Users'
 
     def __str__(self):
-        return self.name
-
-# --- تزریق (Monkey-patching) فیلد last_login ---
-# این یک تکنیک پیشرفته است. ما به صورت دستی و فقط در زمان اجرا (runtime)
-# یک ویژگی last_login به کلاس اضافه می‌کنیم تا جنگو را راضی کنیم،
-# بدون اینکه این فیلد وارد منطق ORM شود.
-LegacyUser.last_login = None 
+        return self.name 

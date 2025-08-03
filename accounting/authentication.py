@@ -51,9 +51,33 @@ class LegacyDBBackend(BaseBackend):
 
     def get_user(self, user_id):
         """
-        این متد برای گرفتن کاربر از session استفاده می‌شود و صحیح است.
+        این متد برای گرفتن کاربر از session استفاده می‌شود.
+        به جای query کردن دیتابیس، مستقیماً از cursor استفاده می‌کنیم.
         """
         try:
-            return LegacyUser.objects.using('legacy').get(pk=user_id)
-        except LegacyUser.DoesNotExist:
+            with connections['legacy'].cursor() as cursor:
+                cursor.execute(
+                    "SELECT Id, Name, Pass, Is_Active, Semat FROM Users WHERE Id = %s", 
+                    [user_id]
+                )
+                user_row = cursor.fetchone()
+
+            if not user_row:
+                return None
+
+            # استخراج مقادیر از tuple
+            user_id, user_name, stored_pass, is_active, semat = user_row
+
+            # ساخت آبجکت LegacyUser بدون query کردن ORM
+            user = LegacyUser(
+                id=user_id,
+                name=user_name,
+                password=stored_pass,
+                is_active=is_active,
+                semat=semat
+            )
+            return user
+
+        except Exception as e:
+            print(f"Error in LegacyDBBackend get_user method: {e}")
             return None 
