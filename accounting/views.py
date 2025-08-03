@@ -771,9 +771,8 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
-            # با backend parameter ما به جنگو می‌گوییم که
-            # هیچ ستونی را در دیتابیس کاربر آپدیت نکند.
-            login(request, user, backend='accounting.authentication.LegacyDBBackend')
+            # به حالت استاندارد برمی‌گردیم
+            login(request, user)
             messages.success(request, f'خوش آمدید {user.name}!')
             return redirect('accounting:home')
         else:
