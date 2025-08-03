@@ -18,7 +18,7 @@
     <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'home' %}">
+            <a class="navbar-brand" href="{% url 'accounting:home' %}">
                 <i class="bi bi-calculator"></i>
                 سیستم حسابداری محک
             </a>
@@ -30,27 +30,27 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'home' %}">
+                        <a class="nav-link" href="{% url 'accounting:home' %}">
                             <i class="bi bi-house"></i> صفحه اصلی
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'sanad_list' %}">
+                        <a class="nav-link" href="{% url 'accounting:sanad_list' %}">
                             <i class="bi bi-file-text"></i> اسناد حسابداری
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'person_list' %}">
+                        <a class="nav-link" href="{% url 'accounting:person_list' %}">
                             <i class="bi bi-people"></i> اشخاص
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'backup_db' %}">
+                        <a class="nav-link" href="{% url 'accounting:backup_db' %}">
                             <i class="bi bi-download"></i> پشتیبان‌گیری
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'dev_links' %}">
+                        <a class="nav-link" href="{% url 'accounting:dev_links' %}">
                             <i class="bi bi-gear"></i> توسعه
                         </a>
                     </li>
@@ -64,18 +64,18 @@
                                 {{ user.username|default:"کاربر" }}
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'user_list' %}">
+                                <li><a class="dropdown-item" href="{% url 'accounting:user_list' %}">
                                     <i class="bi bi-people"></i> مدیریت کاربران
                                 </a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'logout' %}">
+                                <li><a class="dropdown-item" href="{% url 'accounting:logout' %}">
                                     <i class="bi bi-box-arrow-right"></i> خروج
                                 </a></li>
                             </ul>
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'login' %}">
+                            <a class="nav-link" href="{% url 'accounting:login' %}">
                                 <i class="bi bi-box-arrow-in-right"></i> ورود
                             </a>
                         </li>

@@ -28,7 +28,7 @@
                     <i class="bi bi-cart-plus text-primary" style="font-size: 2rem;"></i>
                     <h5 class="card-title mt-3">فروش</h5>
                     <p class="card-text">مدیریت فاکتورهای فروش</p>
-                    <a href="{% url 'sale_invoice_create' %}" class="btn btn-primary btn-sm">
+                    <a href="{% url 'accounting:sale_invoice_create' %}" class="btn btn-primary btn-sm">
                         <i class="bi bi-plus-circle me-1"></i>صدور فاکتور فروش
                     </a>
                 </div>
@@ -41,7 +41,7 @@
                     <i class="bi bi-people text-success" style="font-size: 2rem;"></i>
                     <h5 class="card-title mt-3">اشخاص</h5>
                     <p class="card-text">مدیریت مشتریان و تامین‌کنندگان</p>
-                    <a href="{% url 'person_list' %}" class="btn btn-success btn-sm">
+                    <a href="{% url 'accounting:person_list' %}" class="btn btn-success btn-sm">
                         <i class="bi bi-list me-1"></i>لیست اشخاص
                     </a>
                 </div>
@@ -54,7 +54,7 @@
                     <i class="bi bi-box-seam text-warning" style="font-size: 2rem;"></i>
                     <h5 class="card-title mt-3">کالاها</h5>
                     <p class="card-text">مدیریت موجودی و کالاها</p>
-                    <a href="{% url 'good_list' %}" class="btn btn-warning btn-sm">
+                    <a href="{% url 'accounting:good_list' %}" class="btn btn-warning btn-sm">
                         <i class="bi bi-list me-1"></i>لیست کالاها
                     </a>
                 </div>
@@ -67,7 +67,7 @@
                     <i class="bi bi-file-earmark-text text-info" style="font-size: 2rem;"></i>
                     <h5 class="card-title mt-3">اسناد</h5>
                     <p class="card-text">مشاهده اسناد مالی</p>
-                    <a href="{% url 'sanad_list' %}" class="btn btn-info btn-sm">
+                    <a href="{% url 'accounting:sanad_list' %}" class="btn btn-info btn-sm">
                         <i class="bi bi-list me-1"></i>لیست اسناد
                     </a>
                 </div>
@@ -193,7 +193,7 @@
                 <div class="card-body text-center">
                     <i class="bi bi-boxes text-primary" style="font-size: 1.5rem;"></i>
                     <h6 class="card-title mt-2">گزارش موجودی</h6>
-                    <a href="{% url 'inventory_report' %}" class="btn btn-outline-primary btn-sm">
+                    <a href="{% url 'accounting:inventory_report' %}" class="btn btn-outline-primary btn-sm">
                         <i class="bi bi-file-earmark-text me-1"></i>مشاهده
                     </a>
                 </div>
@@ -205,7 +205,7 @@
                 <div class="card-body text-center">
                     <i class="bi bi-calculator text-success" style="font-size: 1.5rem;"></i>
                     <h6 class="card-title mt-2">گزارش مالی</h6>
-                    <a href="{% url 'financial_report' %}" class="btn btn-outline-success btn-sm">
+                    <a href="{% url 'accounting:financial_report' %}" class="btn btn-outline-success btn-sm">
                         <i class="bi bi-file-earmark-text me-1"></i>مشاهده
                     </a>
                 </div>

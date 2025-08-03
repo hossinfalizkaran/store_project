@@ -1,36 +1,28 @@
-{% extends 'base.html' %}
-{% load persian_filters %}
+{% extends "base.html" %}
 
-{% block title %}{{ title }}{% endblock %}
+{% block title %}جزئیات شخص - {{ person.name }} - سیستم حسابداری محک{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <!-- دکمه‌های عملیات -->
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <h2 class="mb-0">
-                    <i class="bi bi-person-circle me-2"></i>{{ title }}
-                </h2>
-                <div>
-                    <a href="{% url 'person_list' %}" class="btn btn-outline-secondary me-2">
-                        <i class="bi bi-arrow-left me-1"></i>بازگشت به لیست
-                    </a>
-                    <a href="{% url 'person_update' person.code %}" class="btn btn-warning">
-                        <i class="bi bi-pencil-square me-1"></i>ویرایش شخص
-                    </a>
-                </div>
-            </div>
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-person text-primary"></i> جزئیات شخص</h2>
+        <div>
+            <a href="{% url 'accounting:person_list' %}" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left"></i> بازگشت به لیست
+            </a>
+            <a href="{% url 'accounting:person_update' person.code %}" class="btn btn-warning">
+                <i class="bi bi-pencil"></i> ویرایش
+            </a>
         </div>
     </div>
 
     <div class="row">
-        <!-- اطلاعات اصلی شخص -->
-        <div class="col-lg-8">
-            <div class="card shadow-sm mb-4">
+        <div class="col-md-8">
+            <div class="card shadow">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">
-                        <i class="bi bi-person-badge me-2"></i>اطلاعات اصلی
+                        <i class="bi bi-person-circle"></i>
+                        اطلاعات شخص
                     </h5>
                 </div>
                 <div class="card-body">
@@ -38,202 +30,128 @@
                         <div class="col-md-6">
                             <table class="table table-borderless">
                                 <tr>
-                                    <th class="text-muted" style="width: 120px;">کد شخص:</th>
-                                    <td><strong>{{ person.code }}</strong></td>
-                                </tr>
-                                <tr>
-                                    <th class="text-muted">نام کامل:</th>
-                                    <td>{{ person.fullname|default:"-" }}</td>
+                                    <th class="text-muted">کد:</th>
+                                    <td>{{ person.code }}</td>
                                 </tr>
                                 <tr>
                                     <th class="text-muted">نام:</th>
-                                    <td>{{ person.name|default:"-" }}</td>
+                                    <td>{{ person.name }}</td>
                                 </tr>
                                 <tr>
-                                    <th class="text-muted">نام خانوادگی:</th>
-                                    <td>{{ person.lname|default:"-" }}</td>
+                                    <th class="text-muted">نام اختصاری:</th>
+                                    <td>{{ person.abbname|default:"-" }}</td>
                                 </tr>
                                 <tr>
-                                    <th class="text-muted">گروه:</th>
-                                    <td>
-                                        {% if person.grpcode %}
-                                            <span class="badge bg-info">{{ person.grpcode.name }}</span>
-                                        {% else %}
-                                            -
-                                        {% endif %}
-                                    </td>
+                                    <th class="text-muted">شماره ملی:</th>
+                                    <td>{{ person.sh_meli|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">کد اقتصادی:</th>
+                                    <td>{{ person.economicno|default:"-" }}</td>
                                 </tr>
                             </table>
                         </div>
                         <div class="col-md-6">
                             <table class="table table-borderless">
                                 <tr>
-                                    <th class="text-muted" style="width: 120px;">وضعیت:</th>
-                                    <td>
-                                        {% if person.status == 0 %}
-                                            <span class="badge bg-success">فعال</span>
-                                        {% elif person.status == 1 %}
-                                            <span class="badge bg-secondary">غیرفعال</span>
-                                        {% else %}
-                                            <span class="badge bg-warning">نامشخص</span>
-                                        {% endif %}
-                                    </td>
+                                    <th class="text-muted">تلفن:</th>
+                                    <td>{{ person.tel|default:"-" }}</td>
                                 </tr>
                                 <tr>
-                                    <th class="text-muted">اعتبار:</th>
-                                    <td>
-                                        <span class="fw-bold {% if person.credit < 0 %}text-danger{% else %}text-success{% endif %}">
-                                            {{ person.credit|default:0|floatformat:0 }} ریال
-                                        </span>
-                                    </td>
+                                    <th class="text-muted">فکس:</th>
+                                    <td>{{ person.fax|default:"-" }}</td>
                                 </tr>
                                 <tr>
-                                    <th class="text-muted">تاریخ ثبت:</th>
-                                    <td>{{ person.date|to_jalali|default:"-" }}</td>
+                                    <th class="text-muted">موبایل:</th>
+                                    <td>{{ person.mobile|default:"-" }}</td>
                                 </tr>
                                 <tr>
-                                    <th class="text-muted">نوع شخص:</th>
-                                    <td>
-                                        {% if person.type == 1 %}
-                                            <span class="badge bg-primary">مشتری</span>
-                                        {% elif person.type == 2 %}
-                                            <span class="badge bg-success">فروشنده</span>
-                                        {% elif person.type == 3 %}
-                                            <span class="badge bg-warning">پرسنل</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">سایر</span>
-                                        {% endif %}
-                                    </td>
+                                    <th class="text-muted">ایمیل:</th>
+                                    <td>{{ person.email|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">وب‌سایت:</th>
+                                    <td>{{ person.website|default:"-" }}</td>
                                 </tr>
                             </table>
                         </div>
                     </div>
+                    
+                    <div class="mt-4">
+                        <h6 class="text-muted">آدرس:</h6>
+                        <p class="border rounded p-3 bg-light">
+                            {{ person.addr|default:"آدرسی ثبت نشده است." }}
+                        </p>
+                    </div>
+                    
+                    {% if person.comment %}
+                    <div class="mt-4">
+                        <h6 class="text-muted">توضیحات:</h6>
+                        <p class="border rounded p-3 bg-light">
+                            {{ person.comment }}
+                        </p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
-
-        <!-- اطلاعات تماس -->
-        <div class="col-lg-4">
-            <div class="card shadow-sm mb-4">
+        
+        <div class="col-md-4">
+            <div class="card shadow">
                 <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">
-                        <i class="bi bi-telephone me-2"></i>اطلاعات تماس
-                    </h5>
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        اطلاعات تکمیلی
+                    </h6>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label text-muted">تلفن:</label>
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-telephone-fill text-primary me-2"></i>
-                            <span>{{ person.tel1|default:"-" }}</span>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted">موبایل:</label>
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-phone-fill text-success me-2"></i>
-                            <span>{{ person.mobile|default:"-" }}</span>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted">تلفن ۲:</label>
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-telephone-fill text-secondary me-2"></i>
-                            <span>{{ person.tel2|default:"-" }}</span>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted">ایمیل:</label>
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-envelope-fill text-warning me-2"></i>
-                            <span>{{ person.email|default:"-" }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- آدرس و اطلاعات تکمیلی -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0">
-                        <i class="bi bi-geo-alt me-2"></i>آدرس و اطلاعات تکمیلی
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label text-muted">آدرس:</label>
-                                <p class="mb-0">{{ person.addr1|default:"-" }}</p>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label text-muted">آدرس ۲:</label>
-                                <p class="mb-0">{{ person.addr2|default:"-" }}</p>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label text-muted">کد پستی:</label>
-                                <p class="mb-0">{{ person.postalcode|default:"-" }}</p>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label text-muted">شهر:</label>
-                                <p class="mb-0">{{ person.city|default:"-" }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- اطلاعات مالی -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">
-                        <i class="bi bi-cash-coin me-2"></i>اطلاعات مالی
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="text-center p-3 border rounded">
-                                <h6 class="text-muted mb-2">اعتبار فعلی</h6>
-                                <h4 class="{% if person.credit < 0 %}text-danger{% else %}text-success{% endif %} mb-0">
-                                    {{ person.credit|default:0|floatformat:0 }}
-                                </h4>
-                                <small class="text-muted">ریال</small>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="text-center p-3 border rounded">
-                                <h6 class="text-muted mb-2">محدودیت اعتبار</h6>
-                                <h4 class="text-info mb-0">{{ person.creditlimit|default:0|floatformat:0 }}</h4>
-                                <small class="text-muted">ریال</small>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="text-center p-3 border rounded">
-                                <h6 class="text-muted mb-2">تاریخ آخرین تراکنش</h6>
-                                <h6 class="text-secondary mb-0">{{ person.lastdate|to_jalali|default:"-" }}</h6>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="text-center p-3 border rounded">
-                                <h6 class="text-muted mb-2">وضعیت مالی</h6>
-                                {% if person.credit < 0 %}
-                                    <span class="badge bg-danger">بدهکار</span>
-                                {% elif person.credit > 0 %}
-                                    <span class="badge bg-success">بستانکار</span>
+                    <table class="table table-sm">
+                        <tr>
+                            <th class="text-muted">نوع شخص:</th>
+                            <td>{{ person.type|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">وضعیت:</th>
+                            <td>
+                                {% if person.status %}
+                                    <span class="badge bg-success">فعال</span>
                                 {% else %}
-                                    <span class="badge bg-secondary">صفر</span>
+                                    <span class="badge bg-danger">غیرفعال</span>
                                 {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">تاریخ ثبت:</th>
+                            <td>{{ person.date|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">کد پستی:</th>
+                            <td>{{ person.postcode|default:"-" }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- آمار سریع -->
+            <div class="card shadow mt-3">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-graph-up"></i>
+                        آمار سریع
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border rounded p-2">
+                                <h5 class="text-primary mb-0">{{ total_sales|default:0 }}</h5>
+                                <small class="text-muted">فروش</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-2">
+                                <h5 class="text-success mb-0">{{ total_purchases|default:0 }}</h5>
+                                <small class="text-muted">خرید</small>
                             </div>
                         </div>
                     </div>
@@ -241,42 +159,5 @@
             </div>
         </div>
     </div>
-
-    <!-- اطلاعات تکمیلی -->
-    {% if person.comment or person.nationalcode or person.economiccode %}
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="mb-0">
-                        <i class="bi bi-info-circle me-2"></i>اطلاعات تکمیلی
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        {% if person.nationalcode %}
-                        <div class="col-md-4">
-                            <label class="form-label text-muted">کد ملی:</label>
-                            <p class="mb-0">{{ person.nationalcode }}</p>
-                        </div>
-                        {% endif %}
-                        {% if person.economiccode %}
-                        <div class="col-md-4">
-                            <label class="form-label text-muted">کد اقتصادی:</label>
-                            <p class="mb-0">{{ person.economiccode }}</p>
-                        </div>
-                        {% endif %}
-                        {% if person.comment %}
-                        <div class="col-md-4">
-                            <label class="form-label text-muted">توضیحات:</label>
-                            <p class="mb-0">{{ person.comment }}</p>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
 </div>
 {% endblock %} 

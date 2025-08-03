@@ -1,50 +1,129 @@
 {% extends "base.html" %}
-{% block title %}جزئیات کالا - {{ good.name }}{% endblock %}
+
+{% block title %}جزئیات کالا - {{ good.name }} - سیستم حسابداری محک{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <div class="card">
-        <div class="card-header">
-            <h3>{{ good.name }} <small class="text-muted">(کد: {{ good.code }})</small></h3>
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-box-seam text-warning"></i> جزئیات کالا</h2>
+        <div>
+            <a href="{% url 'accounting:good_update' good.code %}" class="btn btn-warning">ویرایش</a>
+            <a href="{% url 'accounting:good_list' %}" class="btn btn-secondary">بازگشت به لیست</a>
         </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <p><strong>گروه:</strong> {{ good.grpcode.name|default:'-' }}</p>
-                    <p><strong>واحد اصلی:</strong> {{ good.unit.name|default:'-' }}</p>
-                    <p><strong>واحد فرعی:</strong> {{ good.unit2.name|default:'-' }}</p>
-                    <p><strong>انبار پیش‌فرض:</strong> {{ good.store.name|default:'-' }}</p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-box-seam"></i>
+                        اطلاعات کالا
+                    </h5>
                 </div>
-                <div class="col-md-6">
-                    <p><strong>قیمت مصرف‌کننده:</strong> {{ good.consumerprice|default:'-' }}</p>
-                    <p><strong>وضعیت:</strong> 
-                        {% if good.status == 0 %}
-                            <span class="badge bg-success">فعال</span>
-                        {% else %}
-                            <span class="badge bg-danger">غیرفعال</span>
-                        {% endif %}
-                    </p>
-                    <p><strong>نام اختصاری:</strong> {{ good.abbname|default:'-' }}</p>
-                    <p><strong>معاف از مالیات:</strong> 
-                        {% if good.taxexempt %}
-                            <span class="badge bg-success">بله</span>
-                        {% else %}
-                            <span class="badge bg-secondary">خیر</span>
-                        {% endif %}
-                    </p>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th class="text-muted">کد:</th>
+                                    <td>{{ good.code }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">نام کالا:</th>
+                                    <td>{{ good.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">نام اختصاری:</th>
+                                    <td>{{ good.abbname|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">گروه:</th>
+                                    <td>{{ good.goodgrp.name|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">واحد اصلی:</th>
+                                    <td>{{ good.unit.name|default:"-" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th class="text-muted">واحد فرعی:</th>
+                                    <td>{{ good.unit2.name|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">انبار:</th>
+                                    <td>{{ good.store.name|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">قیمت مصرف‌کننده:</th>
+                                    <td>{{ good.consumerprice|floatformat:0|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">وضعیت:</th>
+                                    <td>
+                                        {% if good.status %}
+                                            <span class="badge bg-success">فعال</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">غیرفعال</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">معاف از مالیات:</th>
+                                    <td>
+                                        {% if good.taxexempt %}
+                                            <span class="badge bg-warning">بله</span>
+                                        {% else %}
+                                            <span class="badge bg-info">خیر</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    {% if good.comment %}
+                    <div class="mt-4">
+                        <h6 class="text-muted">توضیحات:</h6>
+                        <p class="border rounded p-3 bg-light">
+                            {{ good.comment }}
+                        </p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
-            {% if good.comment %}
-            <div class="row mt-3">
-                <div class="col-12">
-                    <p><strong>توضیحات:</strong></p>
-                    <p class="text-muted">{{ good.comment }}</p>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        اطلاعات تکمیلی
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th class="text-muted">تاریخ ثبت:</th>
+                            <td>{{ good.date|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">معاف از عوارض:</th>
+                            <td>
+                                {% if good.chargeexempt %}
+                                    <span class="badge bg-warning">بله</span>
+                                {% else %}
+                                    <span class="badge bg-info">خیر</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
                 </div>
             </div>
-            {% endif %}
-        </div>
-        <div class="card-footer">
-            <a href="{% url 'good_update' good.code %}" class="btn btn-warning">ویرایش</a>
-            <a href="{% url 'good_list' %}" class="btn btn-secondary">بازگشت به لیست</a>
         </div>
     </div>
 </div>

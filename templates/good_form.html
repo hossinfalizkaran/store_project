@@ -1,113 +1,64 @@
 {% extends "base.html" %}
-{% block title %}{{ form_title }}{% endblock %}
+
+{% block title %}
+    {% if good %}ویرایش کالا{% else %}افزودن کالای جدید{% endif %} - سیستم حسابداری محک
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <div class="card">
-        <div class="card-header"><h3>{{ form_title }}</h3></div>
-        <div class="card-body">
-            <form method="post" action="{% if good %}{% url 'good_update' good.code %}{% else %}{% url 'good_create' %}{% endif %}">
-                {% csrf_token %}
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
-                            {{ form.name }}
-                            {% if form.name.errors %}
-                                <div class="text-danger">{{ form.name.errors }}</div>
-                            {% endif %}
-                        </div>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="bi bi-box-seam"></i>
+                        {% if good %}ویرایش کالا{% else %}افزودن کالای جدید{% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% if good %}{% url 'accounting:good_update' good.code %}{% else %}{% url 'accounting:good_create' %}{% endif %}">
+                        {% csrf_token %}
                         
-                        <div class="mb-3">
-                            <label for="{{ form.abbname.id_for_label }}" class="form-label">{{ form.abbname.label }}</label>
-                            {{ form.abbname }}
-                            {% if form.abbname.errors %}
-                                <div class="text-danger">{{ form.abbname.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.grpcode.id_for_label }}" class="form-label">{{ form.grpcode.label }}</label>
-                            {{ form.grpcode }}
-                            {% if form.grpcode.errors %}
-                                <div class="text-danger">{{ form.grpcode.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.unit.id_for_label }}" class="form-label">{{ form.unit.label }}</label>
-                            {{ form.unit }}
-                            {% if form.unit.errors %}
-                                <div class="text-danger">{{ form.unit.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.unit2.id_for_label }}" class="form-label">{{ form.unit2.label }}</label>
-                            {{ form.unit2 }}
-                            {% if form.unit2.errors %}
-                                <div class="text-danger">{{ form.unit2.errors }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="{{ form.store.id_for_label }}" class="form-label">{{ form.store.label }}</label>
-                            {{ form.store }}
-                            {% if form.store.errors %}
-                                <div class="text-danger">{{ form.store.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.consumerprice.id_for_label }}" class="form-label">{{ form.consumerprice.label }}</label>
-                            {{ form.consumerprice }}
-                            {% if form.consumerprice.errors %}
-                                <div class="text-danger">{{ form.consumerprice.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.status.id_for_label }}" class="form-label">{{ form.status.label }}</label>
-                            {{ form.status }}
-                            {% if form.status.errors %}
-                                <div class="text-danger">{{ form.status.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="form-check">
-                                {{ form.taxexempt }}
-                                <label class="form-check-label" for="{{ form.taxexempt.id_for_label }}">
-                                    {{ form.taxexempt.label }}
-                                </label>
+                        {% if form.errors %}
+                            <div class="alert alert-danger">
+                                <h6>خطاهای زیر رخ داده است:</h6>
+                                {{ form.errors }}
                             </div>
-                        </div>
+                        {% endif %}
                         
-                        <div class="mb-3">
-                            <div class="form-check">
-                                {{ form.chargeexempt }}
-                                <label class="form-check-label" for="{{ form.chargeexempt.id_for_label }}">
-                                    {{ form.chargeexempt.label }}
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">
+                                    {{ field.label }}
+                                    {% if field.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
                                 </label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <div class="form-text">{{ field.help_text }}</div>
+                                {% endif %}
+                                {% if field.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in field.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
                             </div>
+                        {% endfor %}
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'accounting:good_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> انصراف
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> ذخیره
+                            </button>
                         </div>
-                    </div>
+                    </form>
                 </div>
-                
-                <div class="mb-3">
-                    <label for="{{ form.comment.id_for_label }}" class="form-label">{{ form.comment.label }}</label>
-                    {{ form.comment }}
-                    {% if form.comment.errors %}
-                        <div class="text-danger">{{ form.comment.errors }}</div>
-                    {% endif %}
-                </div>
-                
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-success">ذخیره</button>
-                    <a href="{% url 'good_list' %}" class="btn btn-secondary">انصراف</a>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>

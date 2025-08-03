@@ -1120,53 +1120,66 @@ def get_person_info(request):
 @login_required
 def person_list(request):
     """
-    نمایش لیست اشخاص با قابلیت جستجو و صفحه‌بندی (سازگار با SQLite و SQL Server).
+    نمایش لیست اشخاص با استفاده از کوئری SQL خام برای اطمینان از عملکرد صحیح.
     """
+    from django.db import connections
     from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-    from django.db.models import Q
     
-    # queryset پایه
-    persons_qs = Perinf.objects.using('legacy').select_related('grpcode').order_by('code')
-
+    connection = connections['legacy']
+    
     # منطق جستجو
     search_query = request.GET.get('q', '').strip()
+    where_clause = ""
+    params = []
+    
     if search_query:
-        # نرمال‌سازی ورودی کاربر
-        normalized_query = normalize_persian_text(search_query)
-        
-        # استفاده از ORM جنگو برای ساخت کوئری
-        # __icontains به صورت پیش‌فرض case-insensitive است
-        persons_qs = persons_qs.filter(
-            Q(fullname__icontains=normalized_query) |
-            Q(code__icontains=normalized_query) |
-            Q(tel1__icontains=normalized_query) |
-            Q(mobile__icontains=normalized_query)
-        )
-        
-        # برای حل مشکل "ی" و "ک" عربی، یک فیلتر اضافه می‌کنیم
-        # این بخش کمی پیچیده‌تر است چون ORM مستقیم آن را پشتیبانی نمی‌کند
-        # اما راه حل ساده‌تر این است که در جستجوی fullname، هر دو حالت را در نظر بگیریم
-        arabic_query = normalized_query.replace('ی', 'ي').replace('ک', 'ك')
-        if arabic_query != normalized_query:
-             persons_qs = persons_qs | Perinf.objects.using('legacy').select_related('grpcode').filter(
-                Q(fullname__icontains=arabic_query)
-             )
+        search_param = f'%{search_query}%'
+        # برای SQL Server از LIKE ساده استفاده می‌کنیم
+        where_clause = """
+            WHERE p.FullName LIKE %s
+            OR CAST(p.Code AS VARCHAR(20)) LIKE %s
+            OR p.Tel1 LIKE %s
+            OR p.Mobile LIKE %s
+        """
+        params = [search_param, search_param, search_param, search_param]
 
-    # منطق صفحه‌بندی (بدون تغییر)
+    # شمارش کل رکوردها برای صفحه‌بندی
+    with connection.cursor() as cursor:
+        count_query = f"SELECT COUNT(*) FROM PerInf p {where_clause}"
+        cursor.execute(count_query, params)
+        total_count = cursor.fetchone()[0]
+
+    # تنظیمات صفحه‌بندی
     page_number = request.GET.get('page', 1)
-    paginator = Paginator(persons_qs, 25)
+    page_size = 25
+    paginator = Paginator(range(total_count), page_size)
+    page_obj = paginator.get_page(page_number)
+    offset = (page_obj.number - 1) * page_size
 
-    try:
-        page_obj = paginator.page(page_number)
-    except PageNotAnInteger:
-        page_obj = paginator.page(1)
-    except EmptyPage:
-        page_obj = paginator.page(paginator.num_pages)
+    # واکشی داده‌های صفحه فعلی
+    with connection.cursor() as cursor:
+        # برای SQL Server از OFFSET ... FETCH NEXT استفاده می‌کنیم
+        data_query = f"""
+            SELECT p.Code, p.FullName, pg.Name as GroupName, p.Tel1, p.Mobile, p.Credit, p.Status
+            FROM PerInf p
+            LEFT JOIN PerGrp pg ON p.GrpCode = pg.Code
+            {where_clause}
+            ORDER BY p.Code
+            OFFSET %s ROWS FETCH NEXT %s ROWS ONLY
+        """
+        # پارامترهای offset و page_size را به لیست پارامترها اضافه می‌کنیم
+        final_params = params + [offset, page_size]
+        cursor.execute(data_query, final_params)
+        
+        columns = [col[0] for col in cursor.description]
+        persons_data = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
+    # پاس دادن آبجکت صفحه‌بندی و داده‌ها به تمپلیت
     context = {
         'page_obj': page_obj,
+        'persons': persons_data, # نام متغیر را به persons تغییر می‌دهیم
         'search_query': search_query,
-        'total_count': paginator.count,
+        'total_count': total_count,
         'title': 'لیست اشخاص',
     }
     return render(request, 'person_list.html', context)
