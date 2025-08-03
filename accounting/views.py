@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.db.models import Max, Q
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage
 from django.db import connections, transaction
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponse
@@ -16,20 +16,28 @@ from datetime import datetime
 import jdatetime
 import pytz
 
-# 1. ایمپورت کردن تمام مدل‌های مورد نیاز
+# Import all necessary models and forms
 from .models import (
     Perinf, Pergrp, Goodinf, Goodgrps, Sanad, Stores, SandoghTbl,
     Bank, Ldaramad, LHazine, InfCo, Fiscalyear, Checkband, 
     FactFo, FactFoDetail, Kardex, Kharid, ChequesRecieve, ChequePay,
     Chequerecievelog, ChequepayLog, GetRecieve, Settings, Users
 )
-
-# 2. ایمپورت کردن تمام فرم‌های مورد نیاز
 from .forms import (
     PersonForm, GoodForm, StoreForm, SandoghForm, BankForm,
     IncomeForm, ExpenseForm, CompanyInfoForm, FiscalYearForm, CheckBandForm,
     SaleInvoiceForm, SaleInvoiceDetailFormSet
 )
+from .custom_user import LegacyUser
+
+# Helper function to convert raw query results to dictionaries
+def dictfetchall(cursor):
+    "Return all rows from a cursor as a dict"
+    columns = [col[0] for col in cursor.description]
+    return [
+        dict(zip(columns, row))
+        for row in cursor.fetchall()
+    ]
 
 def normalize_persian_text(text):
     """
@@ -82,54 +90,47 @@ def get_new_code(model):
     max_code = max_code_result.get('max_code') or 0
     return max_code + 1
 
-# یک تابع کمکی برای جلوگیری از تکرار کد
-def generic_list_view(request, model, template_name, context_data):
-    queryset = model.objects.using('legacy').all()
-    
-    # مرتب‌سازی پیش‌فرض (اگر مدل فیلد code داشت)
-    if hasattr(model, 'code'):
-        queryset = queryset.order_by('code')
-    elif hasattr(model, 'id'):
-        queryset = queryset.order_by('id')
-
-    # جستجو (مثال ساده)
-    search_query = request.GET.get('q', '')
-    if search_query and hasattr(model, 'name'):
-        queryset = queryset.filter(name__icontains=search_query)
-
-    paginator = Paginator(queryset, 25)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    final_context = {
-        'page_obj': page_obj,
-        'search_query': search_query,
-        'total_count': paginator.count,
-    }
-    final_context.update(context_data)
-    return render(request, template_name, final_context)
-
+# --- Main Views ---
 @login_required
 def home(request):
     return render(request, 'home.html')
 
-# --- بخش اشخاص ---
+# --- Person Views ---
 @login_required
 def person_list(request):
-    # این ویو منطق خاص خود را دارد
-    persons_qs = Perinf.objects.using('legacy').select_related('grpcode').order_by('code')
+    connection = connections['legacy']
     search_query = request.GET.get('q', '').strip()
+    where_clause = ""
+    params = []
+
     if search_query:
-        persons_qs = persons_qs.filter(
-            Q(fullname__icontains=search_query) | Q(code__icontains=search_query)
-        )
-    paginator = Paginator(persons_qs, 25)
-    page_obj = paginator.get_page(request.GET.get('page'))
-    context = {
-        'page_obj': page_obj,
-        'search_query': search_query,
-        'total_count': paginator.count,
-    }
+        search_param = f'%{search_query}%'
+        collation = "COLLATE Persian_100_CI_AI"
+        where_clause = f"WHERE p.FullName {collation} LIKE %s OR CAST(p.Code AS VARCHAR(20)) LIKE %s"
+        params = [search_param, search_param]
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"SELECT COUNT(*) FROM PerInf p {where_clause}", params)
+        total_count = cursor.fetchone()[0]
+
+    paginator = Paginator(range(total_count), 25)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    offset = (page_obj.number - 1) * 25
+
+    with connection.cursor() as cursor:
+        query = f"""
+            SELECT p.Code, p.FullName, pg.Name as GroupName, p.Status
+            FROM PerInf p
+            LEFT JOIN PerGrp pg ON p.GrpCode = pg.Code
+            {where_clause}
+            ORDER BY p.Code
+            OFFSET %s ROWS FETCH NEXT %s ROWS ONLY
+        """
+        cursor.execute(query, params + [offset, 25])
+        persons = dictfetchall(cursor)
+
+    context = {'page_obj': page_obj, 'persons': persons, 'search_query': search_query, 'total_count': total_count}
     return render(request, 'person_list.html', context)
 
 @login_required
@@ -193,28 +194,55 @@ def person_update(request, person_id):
     }
     return render(request, 'person_form.html', context)
 
-# --- بخش کالاها ---
+# --- Good Views ---
 @login_required
 def good_list(request):
-    # این ویو هم منطق خاص خود را دارد
+    connection = connections['legacy']
     good_groups = Goodgrps.objects.using('legacy').all().order_by('code')
-    goods_qs = Goodinf.objects.using('legacy').select_related('grpcode', 'unit').order_by('code')
-    selected_group_id = request.GET.get('group', '')
-    if selected_group_id and selected_group_id.isdigit():
-        goods_qs = goods_qs.filter(grpcode_id=selected_group_id)
-    search_query = request.GET.get('q', '').strip()
-    if search_query:
-        goods_qs = goods_qs.filter(Q(name__icontains=search_query) | Q(code__icontains=search_query))
     
-    paginator = Paginator(goods_qs, 25)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    search_query = request.GET.get('q', '').strip()
+    selected_group_id = request.GET.get('group', '')
+    
+    where_clauses = []
+    params = []
+    collation = "COLLATE Persian_100_CI_AI"
+
+    if search_query:
+        where_clauses.append(f"(g.Name {collation} LIKE %s OR CAST(g.Code AS VARCHAR(20)) LIKE %s)")
+        params.extend([f'%{search_query}%', f'%{search_query}%'])
+    
+    if selected_group_id:
+        where_clauses.append("g.GrpCode = %s")
+        params.append(selected_group_id)
+
+    where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"SELECT COUNT(*) FROM GoodInf g {where_sql}", params)
+        total_count = cursor.fetchone()[0]
+
+    paginator = Paginator(range(total_count), 25)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    offset = (page_obj.number - 1) * 25
+
+    with connection.cursor() as cursor:
+        query = f"""
+            SELECT g.Code, g.Name, gg.Name as GroupName, u.Name as UnitName, g.Mogodi, g.ConsumerPrice
+            FROM GoodInf g
+            LEFT JOIN GoodGrps gg ON g.GrpCode = gg.Code
+            LEFT JOIN Units u ON g.Unit = u.Code
+            {where_sql}
+            ORDER BY g.Code
+            OFFSET %s ROWS FETCH NEXT %s ROWS ONLY
+        """
+        cursor.execute(query, params + [offset, 25])
+        goods = dictfetchall(cursor)
     
     context = {
-        'page_obj': page_obj,
-        'good_groups': good_groups,
-        'selected_group_id': selected_group_id,
-        'search_query': search_query,
-        'total_count': paginator.count,
+        'page_obj': page_obj, 'goods': goods, 'good_groups': good_groups, 
+        'selected_group_id': selected_group_id, 'search_query': search_query, 
+        'total_count': total_count
     }
     return render(request, 'good_list.html', context)
 
@@ -280,354 +308,279 @@ def good_delete(request, good_code):
     messages.success(request, f"کالا '{good_name}' با موفقیت حذف شد.")
     return redirect('accounting:good_list')
 
-# --- بخش اسناد ---
+# --- Sanad List ---
 @login_required
 def sanad_list(request):
-    # اتصال صریح به دیتابیس legacy
     sanads = Sanad.objects.using('legacy').all().order_by('-code')
     paginator = Paginator(sanads, 25)
     page_obj = paginator.get_page(request.GET.get('page'))
     context = {'page_obj': page_obj, 'title': 'لیست اسناد حسابداری'}
     return render(request, 'sanad_list.html', context)
 
-# --- ویوهای اطلاعات پایه با استفاده از تابع کمکی ---
+# --- Generic CRUD Views ---
+@login_required
+def generic_create_view(request, form_class, model, template_name, context_data, redirect_url_name):
+    if request.method == 'POST':
+        form = form_class(request.POST)
+        if form.is_valid():
+            instance = form.save(commit=False)
+            if hasattr(instance, 'code'):
+                # پیدا کردن بزرگترین کد موجود و اختصاص کد جدید
+                max_code_result = model.objects.using('legacy').aggregate(max_code=Max('code'))
+                max_code = max_code_result.get('max_code') or 0
+                instance.code = max_code + 1
+            instance.save(using='legacy')
+            messages.success(request, "مورد جدید با موفقیت ایجاد شد.")
+            return redirect(redirect_url_name)
+    else:
+        form = form_class()
+    
+    final_context = {'form': form}
+    final_context.update(context_data)
+    return render(request, template_name, final_context)
+
+@login_required
+def generic_update_view(request, pk, form_class, model, template_name, context_data, redirect_url_name):
+    instance = get_object_or_404(model.objects.using('legacy'), pk=pk)
+    if request.method == 'POST':
+        form = form_class(request.POST, instance=instance)
+        if form.is_valid():
+            form.save(using='legacy')
+            messages.success(request, "مورد با موفقیت ویرایش شد.")
+            return redirect(redirect_url_name)
+    else:
+        form = form_class(instance=instance)
+    
+    final_context = {'form': form, 'instance': instance}
+    final_context.update(context_data)
+    return render(request, template_name, final_context)
+
+@login_required
+def generic_delete_view(request, pk, model, redirect_url_name, success_message):
+    instance = get_object_or_404(model.objects.using('legacy'), pk=pk)
+    instance_name = getattr(instance, 'name', str(instance))
+    instance.delete()
+    messages.success(request, success_message.format(instance_name))
+    return redirect(redirect_url_name)
+
+# --- Stores ---
 @login_required
 def store_list(request):
-    context = {
-        'title': 'لیست انبارها',
-        'headers': ['کد', 'نام انبار', 'توضیحات'],
-        'fields_to_display': ['code', 'name', 'comment'],
-        'create_url_name': 'accounting:store_create',
-        'update_url_name': 'accounting:store_update',
-        'delete_url_name': 'accounting:store_delete',
-    }
-    return generic_list_view(request, Stores, 'generic_list.html', context)
+    stores = Stores.objects.using('legacy').all().order_by('code')
+    return render(request, 'generic_list.html', {
+        'page_obj': stores, 'title': 'لیست انبارها', 'create_url_name': 'accounting:store_create',
+        'update_url_name': 'accounting:store_update', 'delete_url_name': 'accounting:store_delete',
+        'fields_to_display': ['code', 'name', 'comment']
+    })
 
 @login_required
 def store_create(request):
-    if request.method == 'POST':
-        form = StoreForm(request.POST)
-        if form.is_valid():
-            store = form.save(commit=False)
-            store.code = get_new_code(Stores)
-            store.save(using='legacy')
-            messages.success(request, "انبار با موفقیت ایجاد شد.")
-            return redirect('accounting:store_list')
-    else:
-        form = StoreForm()
-    
-    return render(request, 'generic_form.html', {'form': form, 'form_title': 'ایجاد انبار جدید'})
+    return generic_create_view(
+        request, StoreForm, Stores, 'generic_form.html',
+        {'form_title': 'ایجاد انبار جدید'}, 'accounting:store_list'
+    )
 
 @login_required
 def store_update(request, pk):
-    store = get_object_or_404(Stores.objects.using('legacy'), pk=pk)
-    if request.method == 'POST':
-        form = StoreForm(request.POST, instance=store)
-        if form.is_valid():
-            form.save(using='legacy')
-            messages.success(request, "انبار با موفقیت ویرایش شد.")
-            return redirect('accounting:store_list')
-    else:
-        form = StoreForm(instance=store)
-    
-    return render(request, 'generic_form.html', {'form': form, 'form_title': 'ویرایش انبار'})
+    return generic_update_view(
+        request, pk, StoreForm, Stores, 'generic_form.html',
+        {'form_title': 'ویرایش انبار'}, 'accounting:store_list'
+    )
 
 @login_required
 def store_delete(request, pk):
-    store = get_object_or_404(Stores.objects.using('legacy'), pk=pk)
-    store.delete()
-    messages.success(request, "انبار با موفقیت حذف شد.")
-    return redirect('accounting:store_list')
+    return generic_delete_view(
+        request, pk, Stores, 'accounting:store_list',
+        'انبار "{}" با موفقیت حذف شد.'
+    )
 
+# --- Sandoghs ---
 @login_required
 def sandogh_list(request):
-    context = {
-        'title': 'لیست صندوق‌ها',
-        'headers': ['کد', 'نام صندوق', 'توضیحات'],
-        'fields_to_display': ['code', 'name', 'comment'],
-        'create_url_name': 'accounting:sandogh_create',
-        'update_url_name': 'accounting:sandogh_update',
-        'delete_url_name': 'accounting:sandogh_delete',
-    }
-    return generic_list_view(request, SandoghTbl, 'generic_list.html', context)
+    sandoghs = SandoghTbl.objects.using('legacy').all().order_by('code')
+    return render(request, 'generic_list.html', {
+        'page_obj': sandoghs, 'title': 'لیست صندوق‌ها', 'create_url_name': 'accounting:sandogh_create',
+        'update_url_name': 'accounting:sandogh_update', 'delete_url_name': 'accounting:sandogh_delete',
+        'fields_to_display': ['code', 'name', 'comment']
+    })
 
 @login_required
 def sandogh_create(request):
-    if request.method == 'POST':
-        form = SandoghForm(request.POST)
-        if form.is_valid():
-            sandogh = form.save(commit=False)
-            sandogh.code = get_new_code(SandoghTbl)
-            sandogh.save(using='legacy')
-            messages.success(request, "صندوق با موفقیت ایجاد شد.")
-            return redirect('accounting:sandogh_list')
-    else:
-        form = SandoghForm()
-    
-    return render(request, 'generic_form.html', {'form': form, 'form_title': 'ایجاد صندوق جدید'})
+    return generic_create_view(
+        request, SandoghForm, SandoghTbl, 'generic_form.html',
+        {'form_title': 'ایجاد صندوق جدید'}, 'accounting:sandogh_list'
+    )
 
 @login_required
 def sandogh_update(request, pk):
-    sandogh = get_object_or_404(SandoghTbl.objects.using('legacy'), pk=pk)
-    if request.method == 'POST':
-        form = SandoghForm(request.POST, instance=sandogh)
-        if form.is_valid():
-            form.save(using='legacy')
-            messages.success(request, "صندوق با موفقیت ویرایش شد.")
-            return redirect('accounting:sandogh_list')
-    else:
-        form = SandoghForm(instance=sandogh)
-    
-    return render(request, 'generic_form.html', {'form': form, 'form_title': 'ویرایش صندوق'})
+    return generic_update_view(
+        request, pk, SandoghForm, SandoghTbl, 'generic_form.html',
+        {'form_title': 'ویرایش صندوق'}, 'accounting:sandogh_list'
+    )
 
 @login_required
 def sandogh_delete(request, pk):
-    sandogh = get_object_or_404(SandoghTbl.objects.using('legacy'), pk=pk)
-    sandogh.delete()
-    messages.success(request, "صندوق با موفقیت حذف شد.")
-    return redirect('accounting:sandogh_list')
+    return generic_delete_view(
+        request, pk, SandoghTbl, 'accounting:sandogh_list',
+        'صندوق "{}" با موفقیت حذف شد.'
+    )
 
+# --- Banks ---
 @login_required
 def bank_list(request):
-    context = {
-        'title': 'لیست بانک‌ها',
-        'headers': ['کد', 'نام بانک', 'شعبه', 'شماره حساب'],
-        'fields_to_display': ['code', 'name', 'shobe', 'sh_h'],
-        'create_url_name': 'accounting:bank_create',
-        'update_url_name': 'accounting:bank_update',
-        'delete_url_name': 'accounting:bank_delete',
-    }
-    return generic_list_view(request, Bank, 'generic_list.html', context)
+    banks = Bank.objects.using('legacy').all().order_by('code')
+    return render(request, 'generic_list.html', {
+        'page_obj': banks, 'title': 'لیست بانک‌ها', 'create_url_name': 'accounting:bank_create',
+        'update_url_name': 'accounting:bank_update', 'delete_url_name': 'accounting:bank_delete',
+        'fields_to_display': ['code', 'name', 'shobe', 'sh_h']
+    })
 
 @login_required
 def bank_create(request):
-    if request.method == 'POST':
-        form = BankForm(request.POST)
-        if form.is_valid():
-            bank = form.save(commit=False)
-            bank.code = get_new_code(Bank)
-            bank.save(using='legacy')
-            messages.success(request, "بانک با موفقیت ایجاد شد.")
-            return redirect('accounting:bank_list')
-    else:
-        form = BankForm()
-    
-    return render(request, 'generic_form.html', {'form': form, 'form_title': 'ایجاد بانک جدید'})
+    return generic_create_view(
+        request, BankForm, Bank, 'generic_form.html',
+        {'form_title': 'ایجاد بانک جدید'}, 'accounting:bank_list'
+    )
 
 @login_required
 def bank_update(request, pk):
-    bank = get_object_or_404(Bank.objects.using('legacy'), pk=pk)
-    if request.method == 'POST':
-        form = BankForm(request.POST, instance=bank)
-        if form.is_valid():
-            form.save(using='legacy')
-            messages.success(request, "بانک با موفقیت ویرایش شد.")
-            return redirect('accounting:bank_list')
-    else:
-        form = BankForm(instance=bank)
-    
-    return render(request, 'generic_form.html', {'form': form, 'form_title': 'ویرایش بانک'})
+    return generic_update_view(
+        request, pk, BankForm, Bank, 'generic_form.html',
+        {'form_title': 'ویرایش بانک'}, 'accounting:bank_list'
+    )
 
 @login_required
 def bank_delete(request, pk):
-    bank = get_object_or_404(Bank.objects.using('legacy'), pk=pk)
-    bank.delete()
-    messages.success(request, "بانک با موفقیت حذف شد.")
-    return redirect('accounting:bank_list')
+    return generic_delete_view(
+        request, pk, Bank, 'accounting:bank_list',
+        'بانک "{}" با موفقیت حذف شد.'
+    )
 
+# --- Incomes ---
 @login_required
 def income_list(request):
-    context = {
-        'title': 'لیست درآمدها',
-        'headers': ['کد', 'نام درآمد', 'توضیحات'],
-        'fields_to_display': ['code', 'name', 'comment'],
-        'create_url_name': 'accounting:income_create',
-        'update_url_name': 'accounting:income_update',
-        'delete_url_name': 'accounting:income_delete',
-    }
-    return generic_list_view(request, Ldaramad, 'generic_list.html', context)
+    incomes = Ldaramad.objects.using('legacy').all().order_by('code')
+    return render(request, 'generic_list.html', {
+        'page_obj': incomes, 'title': 'لیست درآمدها', 'create_url_name': 'accounting:income_create',
+        'update_url_name': 'accounting:income_update', 'delete_url_name': 'accounting:income_delete',
+        'fields_to_display': ['code', 'name', 'comment']
+    })
 
 @login_required
 def income_create(request):
-    if request.method == 'POST':
-        form = IncomeForm(request.POST)
-        if form.is_valid():
-            income = form.save(commit=False)
-            income.code = get_new_code(Ldaramad)
-            income.save(using='legacy')
-            messages.success(request, "درآمد با موفقیت ایجاد شد.")
-            return redirect('accounting:income_list')
-    else:
-        form = IncomeForm()
-    
-    return render(request, 'generic_form.html', {'form': form, 'form_title': 'ایجاد درآمد جدید'})
+    return generic_create_view(
+        request, IncomeForm, Ldaramad, 'generic_form.html',
+        {'form_title': 'ایجاد درآمد جدید'}, 'accounting:income_list'
+    )
 
 @login_required
 def income_update(request, pk):
-    income = get_object_or_404(Ldaramad.objects.using('legacy'), pk=pk)
-    if request.method == 'POST':
-        form = IncomeForm(request.POST, instance=income)
-        if form.is_valid():
-            form.save(using='legacy')
-            messages.success(request, "درآمد با موفقیت ویرایش شد.")
-            return redirect('accounting:income_list')
-    else:
-        form = IncomeForm(instance=income)
-    
-    return render(request, 'generic_form.html', {'form': form, 'form_title': 'ویرایش درآمد'})
+    return generic_update_view(
+        request, pk, IncomeForm, Ldaramad, 'generic_form.html',
+        {'form_title': 'ویرایش درآمد'}, 'accounting:income_list'
+    )
 
 @login_required
 def income_delete(request, pk):
-    income = get_object_or_404(Ldaramad.objects.using('legacy'), pk=pk)
-    income.delete()
-    messages.success(request, "درآمد با موفقیت حذف شد.")
-    return redirect('accounting:income_list')
+    return generic_delete_view(
+        request, pk, Ldaramad, 'accounting:income_list',
+        'درآمد "{}" با موفقیت حذف شد.'
+    )
 
+# --- Expenses ---
 @login_required
 def expense_list(request):
-    context = {
-        'title': 'لیست هزینه‌ها',
-        'headers': ['کد', 'نام هزینه', 'توضیحات'],
-        'fields_to_display': ['code', 'name', 'comment'],
-        'create_url_name': 'accounting:expense_create',
-        'update_url_name': 'accounting:expense_update',
-        'delete_url_name': 'accounting:expense_delete',
-    }
-    return generic_list_view(request, LHazine, 'generic_list.html', context)
+    expenses = LHazine.objects.using('legacy').all().order_by('code')
+    return render(request, 'generic_list.html', {
+        'page_obj': expenses, 'title': 'لیست هزینه‌ها', 'create_url_name': 'accounting:expense_create',
+        'update_url_name': 'accounting:expense_update', 'delete_url_name': 'accounting:expense_delete',
+        'fields_to_display': ['code', 'name', 'comment']
+    })
 
 @login_required
 def expense_create(request):
-    if request.method == 'POST':
-        form = ExpenseForm(request.POST)
-        if form.is_valid():
-            expense = form.save(commit=False)
-            expense.code = get_new_code(LHazine)
-            expense.save(using='legacy')
-            messages.success(request, "هزینه با موفقیت ایجاد شد.")
-            return redirect('accounting:expense_list')
-    else:
-        form = ExpenseForm()
-    
-    return render(request, 'generic_form.html', {'form': form, 'form_title': 'ایجاد هزینه جدید'})
+    return generic_create_view(
+        request, ExpenseForm, LHazine, 'generic_form.html',
+        {'form_title': 'ایجاد هزینه جدید'}, 'accounting:expense_list'
+    )
 
 @login_required
 def expense_update(request, pk):
-    expense = get_object_or_404(LHazine.objects.using('legacy'), pk=pk)
-    if request.method == 'POST':
-        form = ExpenseForm(request.POST, instance=expense)
-        if form.is_valid():
-            form.save(using='legacy')
-            messages.success(request, "هزینه با موفقیت ویرایش شد.")
-            return redirect('accounting:expense_list')
-    else:
-        form = ExpenseForm(instance=expense)
-    
-    return render(request, 'generic_form.html', {'form': form, 'form_title': 'ویرایش هزینه'})
+    return generic_update_view(
+        request, pk, ExpenseForm, LHazine, 'generic_form.html',
+        {'form_title': 'ویرایش هزینه'}, 'accounting:expense_list'
+    )
 
 @login_required
 def expense_delete(request, pk):
-    expense = get_object_or_404(LHazine.objects.using('legacy'), pk=pk)
-    expense.delete()
-    messages.success(request, "هزینه با موفقیت حذف شد.")
-    return redirect('accounting:expense_list')
+    return generic_delete_view(
+        request, pk, LHazine, 'accounting:expense_list',
+        'هزینه "{}" با موفقیت حذف شد.'
+    )
 
+# --- Fiscal Years ---
 @login_required
 def fiscal_year_list(request):
-    context = {
-        'title': 'لیست دوره‌های مالی',
-        'headers': ['کد', 'نام دوره', 'تاریخ شروع', 'تاریخ پایان'],
-        'fields_to_display': ['code', 'name', 'startdate', 'enddate'],
-        'create_url_name': 'accounting:fiscal_year_create',
-        'update_url_name': 'accounting:fiscal_year_update',
-        'delete_url_name': 'accounting:fiscal_year_delete',
-    }
-    return generic_list_view(request, Fiscalyear, 'generic_list.html', context)
+    fiscal_years = Fiscalyear.objects.using('legacy').all().order_by('code')
+    return render(request, 'generic_list.html', {
+        'page_obj': fiscal_years, 'title': 'لیست دوره‌های مالی', 'create_url_name': 'accounting:fiscal_year_create',
+        'update_url_name': 'accounting:fiscal_year_update', 'delete_url_name': 'accounting:fiscal_year_delete',
+        'fields_to_display': ['code', 'name', 'startdate', 'enddate']
+    })
 
 @login_required
 def fiscal_year_create(request):
-    if request.method == 'POST':
-        form = FiscalYearForm(request.POST)
-        if form.is_valid():
-            fiscal_year = form.save(commit=False)
-            fiscal_year.code = get_new_code(Fiscalyear)
-            fiscal_year.save(using='legacy')
-            messages.success(request, "دوره مالی با موفقیت ایجاد شد.")
-            return redirect('accounting:fiscal_year_list')
-    else:
-        form = FiscalYearForm()
-    
-    return render(request, 'generic_form.html', {'form': form, 'form_title': 'ایجاد دوره مالی جدید'})
+    return generic_create_view(
+        request, FiscalYearForm, Fiscalyear, 'generic_form.html',
+        {'form_title': 'ایجاد دوره مالی جدید'}, 'accounting:fiscal_year_list'
+    )
 
 @login_required
 def fiscal_year_update(request, pk):
-    fiscal_year = get_object_or_404(Fiscalyear.objects.using('legacy'), pk=pk)
-    if request.method == 'POST':
-        form = FiscalYearForm(request.POST, instance=fiscal_year)
-        if form.is_valid():
-            form.save(using='legacy')
-            messages.success(request, "دوره مالی با موفقیت ویرایش شد.")
-            return redirect('accounting:fiscal_year_list')
-    else:
-        form = FiscalYearForm(instance=fiscal_year)
-    
-    return render(request, 'generic_form.html', {'form': form, 'form_title': 'ویرایش دوره مالی'})
+    return generic_update_view(
+        request, pk, FiscalYearForm, Fiscalyear, 'generic_form.html',
+        {'form_title': 'ویرایش دوره مالی'}, 'accounting:fiscal_year_list'
+    )
 
 @login_required
 def fiscal_year_delete(request, pk):
-    fiscal_year = get_object_or_404(Fiscalyear.objects.using('legacy'), pk=pk)
-    fiscal_year.delete()
-    messages.success(request, "دوره مالی با موفقیت حذف شد.")
-    return redirect('accounting:fiscal_year_list')
+    return generic_delete_view(
+        request, pk, Fiscalyear, 'accounting:fiscal_year_list',
+        'دوره مالی "{}" با موفقیت حذف شد.'
+    )
 
+# --- Check Bands ---
 @login_required
 def check_band_list(request):
-    context = {
-        'title': 'لیست دسته چک‌ها',
-        'headers': ['کد', 'نام دسته', 'شماره شروع', 'شماره پایان'],
-        'fields_to_display': ['code', 'name', 'startno', 'endno'],
-        'create_url_name': 'accounting:check_band_create',
-        'update_url_name': 'accounting:check_band_update',
-        'delete_url_name': 'accounting:check_band_delete',
-    }
-    return generic_list_view(request, Checkband, 'generic_list.html', context)
+    check_bands = Checkband.objects.using('legacy').all().order_by('code')
+    return render(request, 'generic_list.html', {
+        'page_obj': check_bands, 'title': 'لیست دسته چک‌ها', 'create_url_name': 'accounting:check_band_create',
+        'update_url_name': 'accounting:check_band_update', 'delete_url_name': 'accounting:check_band_delete',
+        'fields_to_display': ['code', 'name', 'startno', 'endno']
+    })
 
 @login_required
 def check_band_create(request):
-    if request.method == 'POST':
-        form = CheckBandForm(request.POST)
-        if form.is_valid():
-            check_band = form.save(commit=False)
-            check_band.code = get_new_code(Checkband)
-            check_band.save(using='legacy')
-            messages.success(request, "دسته چک با موفقیت ایجاد شد.")
-            return redirect('accounting:check_band_list')
-    else:
-        form = CheckBandForm()
-    
-    return render(request, 'generic_form.html', {'form': form, 'form_title': 'ایجاد دسته چک جدید'})
+    return generic_create_view(
+        request, CheckBandForm, Checkband, 'generic_form.html',
+        {'form_title': 'ایجاد دسته چک جدید'}, 'accounting:check_band_list'
+    )
 
 @login_required
 def check_band_update(request, pk):
-    check_band = get_object_or_404(Checkband.objects.using('legacy'), pk=pk)
-    if request.method == 'POST':
-        form = CheckBandForm(request.POST, instance=check_band)
-        if form.is_valid():
-            form.save(using='legacy')
-            messages.success(request, "دسته چک با موفقیت ویرایش شد.")
-            return redirect('accounting:check_band_list')
-    else:
-        form = CheckBandForm(instance=check_band)
-    
-    return render(request, 'generic_form.html', {'form': form, 'form_title': 'ویرایش دسته چک'})
+    return generic_update_view(
+        request, pk, CheckBandForm, Checkband, 'generic_form.html',
+        {'form_title': 'ویرایش دسته چک'}, 'accounting:check_band_list'
+    )
 
 @login_required
 def check_band_delete(request, pk):
-    check_band = get_object_or_404(Checkband.objects.using('legacy'), pk=pk)
-    check_band.delete()
-    messages.success(request, "دسته چک با موفقیت حذف شد.")
-    return redirect('accounting:check_band_list')
+    return generic_delete_view(
+        request, pk, Checkband, 'accounting:check_band_list',
+        'دسته چک "{}" با موفقیت حذف شد.'
+    )
 
-# ویو ویرایش مشخصات شرکت - اصلاح شده برای مدل InfCo
+# --- Company Info ---
 @login_required
 def company_info_update(request):
     # استفاده از raw SQL برای InfCo چون فیلد id ندارد
@@ -663,7 +616,7 @@ def company_info_update(request):
     
     return render(request, 'generic_form.html', {'form': form, 'form_title': 'ویرایش مشخصات شرکت'})
 
-# --- بخش فاکتور فروش ---
+# --- Sales Invoice ---
 @login_required
 def sale_invoice_create(request):
     if request.method == 'POST':
@@ -702,7 +655,7 @@ def sale_invoice_create(request):
     }
     return render(request, 'sale_invoice_form.html', context)
 
-# --- سایر ویوهای موجود ---
+# --- Other Views ---
 @login_required
 def dev_links(request):
     return render(request, 'dev_links.html')

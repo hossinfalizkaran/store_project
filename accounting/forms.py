@@ -551,10 +551,9 @@ SaleInvoiceDetailFormSet = inlineformset_factory(
 class StoreForm(forms.ModelForm):
     class Meta:
         model = Stores
-        fields = ['code', 'name', 'comment']
-        labels = {'code': 'کد انبار', 'name': 'نام انبار', 'comment': 'توضیحات'}
+        fields = ['name', 'comment']
+        labels = {'name': 'نام انبار', 'comment': 'توضیحات'}
         widgets = {
-            'code': forms.NumberInput(attrs={'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
@@ -562,10 +561,9 @@ class StoreForm(forms.ModelForm):
 class SandoghForm(forms.ModelForm):
     class Meta:
         model = SandoghTbl
-        fields = ['code', 'name', 'comment']
-        labels = {'code': 'کد صندوق', 'name': 'نام صندوق', 'comment': 'توضیحات'}
+        fields = ['name', 'comment']
+        labels = {'name': 'نام صندوق', 'comment': 'توضیحات'}
         widgets = {
-            'code': forms.NumberInput(attrs={'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
@@ -573,9 +571,8 @@ class SandoghForm(forms.ModelForm):
 class BankForm(forms.ModelForm):
     class Meta:
         model = Bank
-        fields = ['code', 'name', 'shobe', 'sh_h', 'tel', 'comment']
+        fields = ['name', 'shobe', 'sh_h', 'tel', 'comment']
         labels = {
-            'code': 'کد بانک', 
             'name': 'نام بانک', 
             'shobe': 'شعبه', 
             'sh_h': 'شماره حساب', 
@@ -583,7 +580,6 @@ class BankForm(forms.ModelForm):
             'comment': 'توضیحات'
         }
         widgets = {
-            'code': forms.NumberInput(attrs={'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'shobe': forms.TextInput(attrs={'class': 'form-control'}),
             'sh_h': forms.TextInput(attrs={'class': 'form-control'}),
@@ -594,10 +590,9 @@ class BankForm(forms.ModelForm):
 class IncomeForm(forms.ModelForm):
     class Meta:
         model = Ldaramad
-        fields = ['code', 'name', 'comment']
-        labels = {'code': 'کد درآمد', 'name': 'عنوان درآمد', 'comment': 'توضیحات'}
+        fields = ['name', 'comment']
+        labels = {'name': 'عنوان درآمد', 'comment': 'توضیحات'}
         widgets = {
-            'code': forms.NumberInput(attrs={'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
@@ -605,10 +600,9 @@ class IncomeForm(forms.ModelForm):
 class ExpenseForm(forms.ModelForm):
     class Meta:
         model = LHazine
-        fields = ['code', 'name', 'comment']
-        labels = {'code': 'کد هزینه', 'name': 'عنوان هزینه', 'comment': 'توضیحات'}
+        fields = ['name', 'comment']
+        labels = {'name': 'عنوان هزینه', 'comment': 'توضیحات'}
         widgets = {
-            'code': forms.NumberInput(attrs={'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
