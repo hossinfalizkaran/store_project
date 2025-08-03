@@ -1,7 +1,6 @@
 # accounting/views.py
 
 from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.db.models import Max, Q
@@ -31,6 +30,7 @@ from .forms import (
     SaleInvoiceForm, SaleInvoiceDetailFormSet
 )
 from .custom_user import LegacyUser
+from .decorators import legacy_login_required
 
 # Disable the last_login signal handler for our custom user model
 @receiver(user_logged_in)
@@ -110,12 +110,12 @@ def get_new_code(model):
     return max_code + 1
 
 # --- Main Views ---
-@login_required
+@legacy_login_required
 def home(request):
     return render(request, 'home.html')
 
 # --- Person Views ---
-@login_required
+@legacy_login_required
 def person_list(request):
     connection = connections['legacy']
     search_query = request.GET.get('q', '').strip()
@@ -152,7 +152,7 @@ def person_list(request):
     context = {'page_obj': page_obj, 'persons': persons, 'search_query': search_query, 'total_count': total_count}
     return render(request, 'person_list.html', context)
 
-@login_required
+@legacy_login_required
 def person_detail(request, person_id):
     person = get_object_or_404(Perinf.objects.using('legacy'), code=person_id)
     context = {
@@ -161,7 +161,7 @@ def person_detail(request, person_id):
     }
     return render(request, 'person_detail.html', context)
 
-@login_required
+@legacy_login_required
 def person_create(request):
     if request.method == 'POST':
         form = PersonForm(request.POST)
@@ -188,7 +188,7 @@ def person_create(request):
     }
     return render(request, 'person_form.html', context)
 
-@login_required
+@legacy_login_required
 def person_update(request, person_id):
     person = get_object_or_404(Perinf.objects.using('legacy'), code=person_id)
     if request.method == 'POST':
@@ -214,7 +214,7 @@ def person_update(request, person_id):
     return render(request, 'person_form.html', context)
 
 # --- Good Views ---
-@login_required
+@legacy_login_required
 def good_list(request):
     connection = connections['legacy']
     good_groups = Goodgrps.objects.using('legacy').all().order_by('code')
@@ -265,7 +265,7 @@ def good_list(request):
     }
     return render(request, 'good_list.html', context)
 
-@login_required
+@legacy_login_required
 def good_detail(request, good_id):
     good = get_object_or_404(Goodinf.objects.using('legacy').select_related('grpcode', 'unit'), code=good_id)
     context = {
@@ -274,7 +274,7 @@ def good_detail(request, good_id):
     }
     return render(request, 'good_detail.html', context)
 
-@login_required
+@legacy_login_required
 def good_create(request):
     if request.method == 'POST':
         form = GoodForm(request.POST)
@@ -298,7 +298,7 @@ def good_create(request):
     }
     return render(request, 'good_form.html', context)
 
-@login_required
+@legacy_login_required
 def good_update(request, good_id):
     good = get_object_or_404(Goodinf.objects.using('legacy'), code=good_id)
     if request.method == 'POST':
@@ -319,7 +319,7 @@ def good_update(request, good_id):
     }
     return render(request, 'good_form.html', context)
 
-@login_required
+@legacy_login_required
 def good_delete(request, good_code):
     good = get_object_or_404(Goodinf.objects.using('legacy'), code=good_code)
     good_name = good.name
@@ -328,7 +328,7 @@ def good_delete(request, good_code):
     return redirect('accounting:good_list')
 
 # --- Sanad List ---
-@login_required
+@legacy_login_required
 def sanad_list(request):
     sanads = Sanad.objects.using('legacy').all().order_by('-code')
     paginator = Paginator(sanads, 25)
@@ -337,7 +337,7 @@ def sanad_list(request):
     return render(request, 'sanad_list.html', context)
 
 # --- Generic CRUD Views ---
-@login_required
+@legacy_login_required
 def generic_create_view(request, form_class, model, template_name, context_data, redirect_url_name):
     if request.method == 'POST':
         form = form_class(request.POST)
@@ -358,7 +358,7 @@ def generic_create_view(request, form_class, model, template_name, context_data,
     final_context.update(context_data)
     return render(request, template_name, final_context)
 
-@login_required
+@legacy_login_required
 def generic_update_view(request, pk, form_class, model, template_name, context_data, redirect_url_name):
     instance = get_object_or_404(model.objects.using('legacy'), pk=pk)
     if request.method == 'POST':
@@ -374,7 +374,7 @@ def generic_update_view(request, pk, form_class, model, template_name, context_d
     final_context.update(context_data)
     return render(request, template_name, final_context)
 
-@login_required
+@legacy_login_required
 def generic_delete_view(request, pk, model, redirect_url_name, success_message):
     instance = get_object_or_404(model.objects.using('legacy'), pk=pk)
     instance_name = getattr(instance, 'name', str(instance))
@@ -383,7 +383,7 @@ def generic_delete_view(request, pk, model, redirect_url_name, success_message):
     return redirect(redirect_url_name)
 
 # --- Stores ---
-@login_required
+@legacy_login_required
 def store_list(request):
     stores = Stores.objects.using('legacy').all().order_by('code')
     return render(request, 'generic_list.html', {
@@ -392,21 +392,21 @@ def store_list(request):
         'fields_to_display': ['code', 'name', 'comment']
     })
 
-@login_required
+@legacy_login_required
 def store_create(request):
     return generic_create_view(
         request, StoreForm, Stores, 'generic_form.html',
         {'form_title': 'ایجاد انبار جدید'}, 'accounting:store_list'
     )
 
-@login_required
+@legacy_login_required
 def store_update(request, pk):
     return generic_update_view(
         request, pk, StoreForm, Stores, 'generic_form.html',
         {'form_title': 'ویرایش انبار'}, 'accounting:store_list'
     )
 
-@login_required
+@legacy_login_required
 def store_delete(request, pk):
     return generic_delete_view(
         request, pk, Stores, 'accounting:store_list',
@@ -414,7 +414,7 @@ def store_delete(request, pk):
     )
 
 # --- Sandoghs ---
-@login_required
+@legacy_login_required
 def sandogh_list(request):
     sandoghs = SandoghTbl.objects.using('legacy').all().order_by('code')
     return render(request, 'generic_list.html', {
@@ -423,21 +423,21 @@ def sandogh_list(request):
         'fields_to_display': ['code', 'name', 'comment']
     })
 
-@login_required
+@legacy_login_required
 def sandogh_create(request):
     return generic_create_view(
         request, SandoghForm, SandoghTbl, 'generic_form.html',
         {'form_title': 'ایجاد صندوق جدید'}, 'accounting:sandogh_list'
     )
 
-@login_required
+@legacy_login_required
 def sandogh_update(request, pk):
     return generic_update_view(
         request, pk, SandoghForm, SandoghTbl, 'generic_form.html',
         {'form_title': 'ویرایش صندوق'}, 'accounting:sandogh_list'
     )
 
-@login_required
+@legacy_login_required
 def sandogh_delete(request, pk):
     return generic_delete_view(
         request, pk, SandoghTbl, 'accounting:sandogh_list',
@@ -445,7 +445,7 @@ def sandogh_delete(request, pk):
     )
 
 # --- Banks ---
-@login_required
+@legacy_login_required
 def bank_list(request):
     banks = Bank.objects.using('legacy').all().order_by('code')
     return render(request, 'generic_list.html', {
@@ -454,21 +454,21 @@ def bank_list(request):
         'fields_to_display': ['code', 'name', 'shobe', 'sh_h']
     })
 
-@login_required
+@legacy_login_required
 def bank_create(request):
     return generic_create_view(
         request, BankForm, Bank, 'generic_form.html',
         {'form_title': 'ایجاد بانک جدید'}, 'accounting:bank_list'
     )
 
-@login_required
+@legacy_login_required
 def bank_update(request, pk):
     return generic_update_view(
         request, pk, BankForm, Bank, 'generic_form.html',
         {'form_title': 'ویرایش بانک'}, 'accounting:bank_list'
     )
 
-@login_required
+@legacy_login_required
 def bank_delete(request, pk):
     return generic_delete_view(
         request, pk, Bank, 'accounting:bank_list',
@@ -476,7 +476,7 @@ def bank_delete(request, pk):
     )
 
 # --- Incomes ---
-@login_required
+@legacy_login_required
 def income_list(request):
     incomes = Ldaramad.objects.using('legacy').all().order_by('code')
     return render(request, 'generic_list.html', {
@@ -485,21 +485,21 @@ def income_list(request):
         'fields_to_display': ['code', 'name', 'comment']
     })
 
-@login_required
+@legacy_login_required
 def income_create(request):
     return generic_create_view(
         request, IncomeForm, Ldaramad, 'generic_form.html',
         {'form_title': 'ایجاد درآمد جدید'}, 'accounting:income_list'
     )
 
-@login_required
+@legacy_login_required
 def income_update(request, pk):
     return generic_update_view(
         request, pk, IncomeForm, Ldaramad, 'generic_form.html',
         {'form_title': 'ویرایش درآمد'}, 'accounting:income_list'
     )
 
-@login_required
+@legacy_login_required
 def income_delete(request, pk):
     return generic_delete_view(
         request, pk, Ldaramad, 'accounting:income_list',
@@ -507,7 +507,7 @@ def income_delete(request, pk):
     )
 
 # --- Expenses ---
-@login_required
+@legacy_login_required
 def expense_list(request):
     expenses = LHazine.objects.using('legacy').all().order_by('code')
     return render(request, 'generic_list.html', {
@@ -516,21 +516,21 @@ def expense_list(request):
         'fields_to_display': ['code', 'name', 'comment']
     })
 
-@login_required
+@legacy_login_required
 def expense_create(request):
     return generic_create_view(
         request, ExpenseForm, LHazine, 'generic_form.html',
         {'form_title': 'ایجاد هزینه جدید'}, 'accounting:expense_list'
     )
 
-@login_required
+@legacy_login_required
 def expense_update(request, pk):
     return generic_update_view(
         request, pk, ExpenseForm, LHazine, 'generic_form.html',
         {'form_title': 'ویرایش هزینه'}, 'accounting:expense_list'
     )
 
-@login_required
+@legacy_login_required
 def expense_delete(request, pk):
     return generic_delete_view(
         request, pk, LHazine, 'accounting:expense_list',
@@ -538,7 +538,7 @@ def expense_delete(request, pk):
     )
 
 # --- Fiscal Years ---
-@login_required
+@legacy_login_required
 def fiscal_year_list(request):
     fiscal_years = Fiscalyear.objects.using('legacy').all().order_by('code')
     return render(request, 'generic_list.html', {
@@ -547,21 +547,21 @@ def fiscal_year_list(request):
         'fields_to_display': ['code', 'name', 'startdate', 'enddate']
     })
 
-@login_required
+@legacy_login_required
 def fiscal_year_create(request):
     return generic_create_view(
         request, FiscalYearForm, Fiscalyear, 'generic_form.html',
         {'form_title': 'ایجاد دوره مالی جدید'}, 'accounting:fiscal_year_list'
     )
 
-@login_required
+@legacy_login_required
 def fiscal_year_update(request, pk):
     return generic_update_view(
         request, pk, FiscalYearForm, Fiscalyear, 'generic_form.html',
         {'form_title': 'ویرایش دوره مالی'}, 'accounting:fiscal_year_list'
     )
 
-@login_required
+@legacy_login_required
 def fiscal_year_delete(request, pk):
     return generic_delete_view(
         request, pk, Fiscalyear, 'accounting:fiscal_year_list',
@@ -569,7 +569,7 @@ def fiscal_year_delete(request, pk):
     )
 
 # --- Check Bands ---
-@login_required
+@legacy_login_required
 def check_band_list(request):
     check_bands = Checkband.objects.using('legacy').all().order_by('code')
     return render(request, 'generic_list.html', {
@@ -578,21 +578,21 @@ def check_band_list(request):
         'fields_to_display': ['code', 'name', 'startno', 'endno']
     })
 
-@login_required
+@legacy_login_required
 def check_band_create(request):
     return generic_create_view(
         request, CheckBandForm, Checkband, 'generic_form.html',
         {'form_title': 'ایجاد دسته چک جدید'}, 'accounting:check_band_list'
     )
 
-@login_required
+@legacy_login_required
 def check_band_update(request, pk):
     return generic_update_view(
         request, pk, CheckBandForm, Checkband, 'generic_form.html',
         {'form_title': 'ویرایش دسته چک'}, 'accounting:check_band_list'
     )
 
-@login_required
+@legacy_login_required
 def check_band_delete(request, pk):
     return generic_delete_view(
         request, pk, Checkband, 'accounting:check_band_list',
@@ -600,7 +600,7 @@ def check_band_delete(request, pk):
     )
 
 # --- Company Info ---
-@login_required
+@legacy_login_required
 def company_info_update(request):
     # استفاده از raw SQL برای InfCo چون فیلد id ندارد
     try:
@@ -636,7 +636,7 @@ def company_info_update(request):
     return render(request, 'generic_form.html', {'form': form, 'form_title': 'ویرایش مشخصات شرکت'})
 
 # --- Sales Invoice ---
-@login_required
+@legacy_login_required
 def sale_invoice_create(request):
     if request.method == 'POST':
         form = SaleInvoiceForm(request.POST)
@@ -675,101 +675,101 @@ def sale_invoice_create(request):
     return render(request, 'sale_invoice_form.html', context)
 
 # --- Other Views ---
-@login_required
+@legacy_login_required
 def dev_links(request):
     return render(request, 'dev_links.html')
 
-@login_required
+@legacy_login_required
 def sales_list(request):
     return render(request, 'sales_list.html')
 
-@login_required
+@legacy_login_required
 def create_sale_invoice(request):
     return render(request, 'create_sale_invoice.html')
 
-@login_required
+@legacy_login_required
 def sales_create(request):
     return render(request, 'sales_create.html')
 
-@login_required
+@legacy_login_required
 def sales_detail(request, sale_id):
     return render(request, 'sales_detail.html')
 
-@login_required
+@legacy_login_required
 def purchase_list(request):
     return render(request, 'purchase_list.html')
 
-@login_required
+@legacy_login_required
 def purchase_create(request):
     return render(request, 'purchase_create.html')
 
-@login_required
+@legacy_login_required
 def cheque_receive_list(request):
     return render(request, 'cheque_receive_list.html')
 
-@login_required
+@legacy_login_required
 def cheque_receive_create(request):
     return render(request, 'cheque_receive_create.html')
 
-@login_required
+@legacy_login_required
 def cheque_receive_status_update(request, cheque_id):
     return render(request, 'cheque_receive_status_update.html')
 
-@login_required
+@legacy_login_required
 def cheque_pay_list(request):
     return render(request, 'cheque_pay_list.html')
 
-@login_required
+@legacy_login_required
 def cheque_pay_create(request):
     return render(request, 'cheque_pay_create.html')
 
-@login_required
+@legacy_login_required
 def inventory_report(request):
     return render(request, 'inventory_report.html')
 
-@login_required
+@legacy_login_required
 def financial_report(request):
     return render(request, 'financial_report.html')
 
 @csrf_exempt
-@login_required
+@legacy_login_required
 def get_good_info(request):
     return render(request, 'get_good_info.html')
 
 @csrf_exempt
-@login_required
+@legacy_login_required
 def get_person_info(request):
     return render(request, 'get_person_info.html')
 
-@login_required
+@legacy_login_required
 def person_settings(request):
     return render(request, 'person_settings.html')
 
-@login_required
+@legacy_login_required
 def sales_list_dynamic(request):
     return render(request, 'sales_list_dynamic.html')
 
-@login_required
+@legacy_login_required
 def purchase_list_dynamic(request):
     return render(request, 'purchase_list_dynamic.html')
 
-@login_required
+@legacy_login_required
 def sanad_list_dynamic(request):
     return render(request, 'sanad_list_dynamic.html')
 
-@login_required
+@legacy_login_required
 def good_list_dynamic(request):
     return render(request, 'good_list_dynamic.html')
 
-@login_required
+@legacy_login_required
 def upload_bak(request):
     return render(request, 'upload_bak.html')
 
-@login_required
+@legacy_login_required
 def backup_db(request):
     return render(request, 'backup_db.html')
 
-@login_required
+@legacy_login_required
 def sanad_detail(request, sanad_id):
     return render(request, 'sanad_detail.html')
 
@@ -806,18 +806,18 @@ def login_view(request):
 def logout_view(request):
     return render(request, 'logout.html')
 
-@login_required
+@legacy_login_required
 def user_list(request):
     return render(request, 'user_list.html')
 
-@login_required
+@legacy_login_required
 def debug_passwords(request):
     return render(request, 'debug_passwords.html')
 
-@login_required
+@legacy_login_required
 def test_password_formats(request):
     return render(request, 'test_password_formats.html')
 
-@login_required
+@legacy_login_required
 def export_users_passwords(request):
     return render(request, 'export_users_passwords.html') 
