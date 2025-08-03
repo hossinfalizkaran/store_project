@@ -6,12 +6,10 @@ from .custom_user import LegacyUser
 
 class LegacyDBBackend(BaseBackend):
     def authenticate(self, request, username=None, password=None):
-        """
-        این نسخه نهایی و اصلاح شده است که به درستی با داده‌های خام دیتابیس کار می‌کند.
-        """
         MASTER_KEY = "masterkey123"
 
         if not username or not password:
+            print("DEBUG: Authenticate failed - username or password is missing.")
             return None
 
         try:
@@ -20,34 +18,38 @@ class LegacyDBBackend(BaseBackend):
                     "SELECT Id, Name, Pass, Is_Active, Semat FROM Users WHERE Name = %s", 
                     [username]
                 )
-                user_row = cursor.fetchone() # نتیجه یک tuple است: (Id, Name, Pass, ...)
+                user_row = cursor.fetchone()
 
             if not user_row:
-                return None # کاربر وجود ندارد
+                print(f"DEBUG: Authenticate failed - User '{username}' not found in DB.")
+                return None
 
-            # استخراج مقادیر از tuple
             user_id, user_name, stored_pass, is_active, semat = user_row
 
             if not is_active:
-                return None # کاربر غیرفعال است
+                print(f"DEBUG: Authenticate failed - User '{username}' is not active.")
+                return None
 
-            # بررسی رمز عبور با استفاده از متغیرهای استخراج شده
-            password_valid = (password == MASTER_KEY) or (stored_pass and stored_pass == password)
+            print(f"DEBUG: Authenticating user '{username}'. Input Pass: '{password}'. Stored Pass: '{stored_pass}'")
 
-            if password_valid:
-                # اگر احراز هویت موفق بود، حالا آبجکت LegacyUser را می‌سازیم
-                user = LegacyUser(
-                    id=user_id,
-                    name=user_name,
-                    is_active=is_active,
-                    semat=semat
-                )
+            # بررسی Master Key
+            if password == MASTER_KEY:
+                print(f"DEBUG: Master Key MATCH for user '{username}'. Authentication successful.")
+                user = LegacyUser(id=user_id, name=user_name, is_active=is_active, semat=semat)
                 return user
+
+            # بررسی رمز عبور واقعی
+            if stored_pass and stored_pass == password:
+                print(f"DEBUG: Regular password MATCH for user '{username}'. Authentication successful.")
+                user = LegacyUser(id=user_id, name=user_name, is_active=is_active, semat=semat)
+                return user
+            
+            print(f"DEBUG: Authenticate failed - Password MISMATCH for user '{username}'.")
+            return None
         
         except Exception as e:
-            print(f"Error in LegacyDBBackend authenticate method: {e}")
-        
-        return None # در صورت بروز هرگونه خطا یا عدم تطابق رمز، None برگردان
+            print(f"ERROR in LegacyDBBackend authenticate method: {e}")
+            return None
 
     def get_user(self, user_id):
         """

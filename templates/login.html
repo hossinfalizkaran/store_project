@@ -125,6 +125,12 @@
         background-color: #fff;
         border-color: #667eea;
     }
+    
+    .text-danger {
+        color: #dc3545 !important;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
 </style>
 {% endblock %}
 
@@ -137,38 +143,58 @@
     <div class="login-title">ورود به سیستم</div>
     <div class="login-subtitle">سیستم مدیریت حسابداری محک</div>
     
-    <form method="post" class="login-form">
+    <!-- نمایش پیام‌های خطا و موفقیت -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <form method="post" class="login-form" action="{% url 'accounting:login' %}">
         {% csrf_token %}
         
-        <!-- Dropdown انتخاب کاربر که اکنون خودش فیلد username است -->
+        <!-- نمایش خطاهای کلی فرم (non-field errors) -->
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Dropdown برای انتخاب کاربر -->
         {% if user_choices %}
         <div class="form-floating user-selector">
-            <select class="form-select" id="username" name="username" required autofocus>
+            <select class="form-select" id="userSelector">
                 <option value="" selected disabled>... یک کاربر را انتخاب کنید ...</option>
-                {% for username_choice in user_choices %}
-                    <option value="{{ username_choice }}">{{ username_choice }}</option>
+                {% for choice in user_choices %}
+                    <option value="{{ choice }}">{{ choice }}</option>
                 {% endfor %}
             </select>
-            <label for="username">
+            <label for="userSelector">
                 <i class="bi bi-person"></i>
                 انتخاب کاربر
             </label>
         </div>
-        {% else %}
-        <!-- اگر کاربری برای انتخاب وجود نداشت، یک فیلد متنی نمایش داده شود -->
-        <div class="form-floating mb-3">
-            <input type="text" class="form-control" id="username" name="username" placeholder="نام کاربری" required autofocus>
-            <label for="username">نام کاربری</label>
-        </div>
         {% endif %}
+
+        <!-- رندر کردن فیلدهای فرم جنگو -->
+        <div class="form-floating mb-3">
+            {{ form.username }}
+            <label for="{{ form.username.id_for_label }}">نام کاربری</label>
+            {% if form.username.errors %}
+                <div class="text-danger small mt-1">{{ form.username.errors.as_text }}</div>
+            {% endif %}
+        </div>
         
-        <!-- فیلد رمز عبور -->
-        <div class="form-floating">
-            <input type="password" class="form-control" id="password" name="password" placeholder="رمز عبور" required>
-            <label for="password">
-                <i class="bi bi-lock"></i>
-                رمز عبور
-            </label>
+        <div class="form-floating mb-3">
+            {{ form.password }}
+            <label for="{{ form.password.id_for_label }}">رمز عبور</label>
+            {% if form.password.errors %}
+                <div class="text-danger small mt-1">{{ form.password.errors.as_text }}</div>
+            {% endif %}
         </div>
         
         <button type="submit" class="btn btn-primary btn-login">
@@ -193,25 +219,16 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // اعتبارسنجی فرم
-    document.querySelector('.login-form').addEventListener('submit', function(e) {
-        const username = document.getElementById('username').value.trim();
-        const password = document.getElementById('password').value.trim();
-        
-        if (!username) {
-            e.preventDefault();
-            alert('لطفاً ابتدا یک کاربر را انتخاب کنید');
-            document.getElementById('username').focus();
-            return false;
-        }
-        
-        if (!password) {
-            e.preventDefault();
-            alert('لطفاً رمز عبور را وارد کنید');
-            document.getElementById('password').focus();
-            return false;
-        }
-    });
+    const userSelector = document.getElementById('userSelector');
+    const usernameInput = document.getElementById('id_username'); // ID پیش‌فرض جنگو
+    
+    if (userSelector && usernameInput) {
+        userSelector.addEventListener('change', function() {
+            if (this.value) {
+                usernameInput.value = this.value;
+            }
+        });
+    }
     
     // انیمیشن ورود
     const loginContainer = document.querySelector('.login-container');

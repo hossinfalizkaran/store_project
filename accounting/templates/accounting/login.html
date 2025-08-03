@@ -130,21 +130,33 @@
     </div>
     {% endif %}
     
-    <form method="post">
+    <form method="post" class="p-4 p-md-5 border rounded-3 bg-light shadow-sm" action="{% url 'accounting:login' %}">
         {% csrf_token %}
-        <div class="form-group">
-            <label for="username" class="form-label">نام کاربری</label>
-            <input type="text" id="username" name="username" class="form-control" required>
+        
+        {% if user_choices %}
+            <div class="form-floating mb-3">
+                <select class="form-select" id="username" name="username" required autofocus>
+                    <option value="" selected disabled>... یک کاربر را انتخاب کنید ...</option>
+                    {% for choice in user_choices %}
+                        <option value="{{ choice }}">{{ choice }}</option>
+                    {% endfor %}
+                </select>
+                <label for="username"><i class="bi bi-person"></i> انتخاب کاربر</label>
+            </div>
+        {% else %}
+            <!-- این بخش فقط زمانی نمایش داده می‌شود که هیچ کاربری برای انتخاب وجود نداشته باشد -->
+            <div class="form-floating mb-3">
+                <input type="text" class="form-control" id="username" name="username" placeholder="نام کاربری" required autofocus>
+                <label for="username">نام کاربری</label>
+            </div>
+        {% endif %}
+        
+        <div class="form-floating mb-3">
+            <input type="password" class="form-control" name="password" placeholder="رمز عبور" required>
+            <label for="password"><i class="bi bi-lock"></i> رمز عبور</label>
         </div>
         
-        <div class="form-group">
-            <label for="password" class="form-label">رمز عبور</label>
-            <input type="password" id="password" name="password" class="form-control" required>
-        </div>
-        
-        <button type="submit" class="btn-login">
-            🔑 ورود
-        </button>
+        <button class="w-100 btn btn-lg btn-primary" type="submit">ورود به سیستم <i class="bi bi-box-arrow-in-right"></i></button>
     </form>
     
     <div class="system-info">

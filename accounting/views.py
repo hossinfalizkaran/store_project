@@ -28,7 +28,7 @@ from .models import (
 from .forms import (
     PersonForm, GoodForm, StoreForm, SandoghForm, BankForm,
     IncomeForm, ExpenseForm, CompanyInfoForm, FiscalYearForm, CheckBandForm,
-    SaleInvoiceForm, SaleInvoiceDetailFormSet
+    SaleInvoiceForm, SaleInvoiceDetailFormSet, LoginForm
 )
 from .custom_user import LegacyUser
 
@@ -76,23 +76,32 @@ def normalize_persian_text(text):
 
 def get_active_users_for_login():
     """
+    نسخه اصلاح شده و قابل دیباگ:
     لیستی از نام‌های کاربری فعال و دارای رمز عبور را برای نمایش در dropdown لاگین برمی‌گرداند.
     """
+    user_list = []
     try:
-        cursor = connections['legacy'].cursor()
-        cursor.execute("""
-            SELECT Name FROM Users 
-            WHERE Is_Active = 1 
-            AND Pass IS NOT NULL 
-            AND Pass != '' 
-            AND Name != 'مدير'
-            ORDER BY Name
-        """)
-        users = cursor.fetchall()
-        return [user[0] for user in users]
+        with connections['legacy'].cursor() as cursor:
+            # کوئری را ساده‌تر می‌کنیم تا مطمئن شویم کار می‌کند
+            query = """
+                SELECT Name FROM Users 
+                WHERE Is_Active = 1 AND Pass IS NOT NULL AND Pass != '' AND Name != 'مدير'
+                ORDER BY Name
+            """
+            cursor.execute(query)
+            users = cursor.fetchall()
+            user_list = [user[0] for user in users]
+            
+            # === دستور دیباگ ===
+            print(f"DEBUG: Found {len(user_list)} users for login dropdown.")
+            if user_list:
+                print(f"DEBUG: First few users: {user_list[:5]}")
+            # ===================
+
     except Exception as e:
-        print(f"Error getting active users: {e}")
-        return []
+        print(f"ERROR in get_active_users_for_login: {e}")
+    
+    return user_list
 
 def get_new_code(model):
     """یک کد جدید بر اساس بزرگترین کد موجود در مدل ایجاد می‌کند."""
@@ -766,21 +775,29 @@ def sanad_detail(request, sanad_id):
 
 def login_view(request):
     if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
-        
-        if user is not None:
-            # به حالت استاندارد برمی‌گردیم
-            login(request, user)
-            messages.success(request, f'خوش آمدید {user.name}!')
-            return redirect('accounting:home')
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(request, username=username, password=password)
+            
+            if user is not None:
+                login(request, user)
+                messages.success(request, f'خوش آمدید {user.name}!')
+                # اگر پارامتر next وجود داشت، به آن آدرس برو
+                next_url = request.GET.get('next', 'accounting:home')
+                return redirect(next_url)
+            else:
+                # اگر authenticate شکست خورد، یک خطا به فرم اضافه می‌کنیم
+                messages.error(request, 'نام کاربری یا رمز عبور اشتباه است یا کاربر غیرفعال است.')
         else:
-            messages.error(request, 'نام کاربری یا رمز عبور اشتباه است یا کاربر غیرفعال است.')
-    
-    # واکشی لیست کاربران و ارسال به تمپلیت
+             messages.error(request, 'لطفاً هر دو فیلد را پر کنید.')
+    else:
+        form = LoginForm()
+
     user_choices = get_active_users_for_login()
     context = {
+        'form': form, # فرم را به context اضافه می‌کنیم
         'user_choices': user_choices
     }
     return render(request, 'login.html', context)
