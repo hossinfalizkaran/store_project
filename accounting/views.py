@@ -1151,7 +1151,7 @@ def person_list(request):
 
     # تنظیمات صفحه‌بندی
     page_number = request.GET.get('page', 1)
-    page_size = 25
+    page_size = 20
     paginator = Paginator(range(total_count), page_size)
     page_obj = paginator.get_page(page_number)
     offset = (page_obj.number - 1) * page_size
