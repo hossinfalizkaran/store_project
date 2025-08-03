@@ -112,6 +112,7 @@ def get_new_code(model):
 # --- Main Views ---
 @legacy_login_required
 def home(request):
+    # این ویو باید بسیار ساده باشد و فقط تمپلیت را رندر کند
     return render(request, 'home.html')
 
 # --- Person Views ---
@@ -774,12 +775,14 @@ def sanad_detail(request, sanad_id):
     return render(request, 'sanad_detail.html')
 
 def login_view(request):
-    # این ویو دیگر نیازی به forms.py ندارد
+    # اگر کاربر از قبل لاگین کرده، او را مستقیم به خانه بفرست
+    if request.user.is_authenticated:
+        return redirect('accounting:home')
+
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
 
-        # بررسی اینکه آیا نام کاربری و رمز عبور ارسال شده‌اند
         if not username or not password:
             messages.error(request, 'لطفاً نام کاربری و رمز عبور را وارد کنید.')
             return redirect('accounting:login')
@@ -788,19 +791,14 @@ def login_view(request):
         
         if user is not None:
             login(request, user)
-            messages.success(request, f'خوش آمدید {user.name}!')
-            next_url = request.GET.get('next', 'accounting:home')
-            return redirect(next_url)
+            # به جای خواندن next از URL، مستقیماً به LOGIN_REDIRECT_URL می‌رویم
+            return redirect('accounting:home') 
         else:
             messages.error(request, 'نام کاربری یا رمز عبور اشتباه است یا کاربر غیرفعال است.')
-            # در صورت شکست، به همان صفحه لاگین برگرد
             return redirect('accounting:login')
     
-    # در حالت GET، فقط لیست کاربران را برای نمایش می‌فرستیم
     user_choices = get_active_users_for_login()
-    context = {
-        'user_choices': user_choices
-    }
+    context = {'user_choices': user_choices}
     return render(request, 'login.html', context)
 
 def logout_view(request):
