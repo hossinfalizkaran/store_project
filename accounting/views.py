@@ -15,6 +15,8 @@ import json
 from datetime import datetime
 import jdatetime
 import pytz
+from django.contrib.auth.signals import user_logged_in
+from django.dispatch import receiver
 
 # Import all necessary models and forms
 from .models import (
@@ -29,6 +31,14 @@ from .forms import (
     SaleInvoiceForm, SaleInvoiceDetailFormSet
 )
 from .custom_user import LegacyUser
+
+# Disable the last_login signal handler for our custom user model
+@receiver(user_logged_in)
+def disable_last_login_update(sender, user, request, **kwargs):
+    """Disable last_login update for LegacyUser model"""
+    if isinstance(user, LegacyUser):
+        # Do nothing - prevent the default last_login update
+        pass
 
 # Helper function to convert raw query results to dictionaries
 def dictfetchall(cursor):
