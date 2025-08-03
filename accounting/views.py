@@ -809,7 +809,7 @@ def login_view(request):
         
         if user is not None:
             login(request, user)
-            messages.success(request, f'خوش آمدید {user.username}!')
+            messages.success(request, f'خوش آمدید {user.name}!')
             return redirect('accounting:home')
         else:
             messages.error(request, 'نام کاربری یا رمز عبور اشتباه است یا کاربر غیرفعال است.')
