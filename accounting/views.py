@@ -75,6 +75,12 @@ def get_active_users_for_login():
         print(f"Error getting active users: {e}")
         return []
 
+def get_new_code(model):
+    """یک کد جدید بر اساس بزرگترین کد موجود در مدل ایجاد می‌کند."""
+    max_code_result = model.objects.using('legacy').aggregate(max_code=Max('code'))
+    max_code = max_code_result.get('max_code') or 0
+    return max_code + 1
+
 # یک تابع کمکی برای جلوگیری از تکرار کد
 def generic_list_view(request, model, template_name, context_data):
     queryset = model.objects.using('legacy').all()
@@ -142,9 +148,7 @@ def person_create(request):
             person = form.save(commit=False)
             
             # پیدا کردن بزرگترین کد موجود و اختصاص کد جدید
-            max_code_result = Perinf.objects.using('legacy').aggregate(max_code=Max('code'))
-            max_code = max_code_result.get('max_code') or 0
-            person.code = max_code + 1
+            person.code = get_new_code(Perinf)
             
             # ساخت fullname بعد از اعتبارسنجی
             person.fullname = f"{form.cleaned_data.get('name') or ''} {form.cleaned_data.get('lname') or ''}".strip()
@@ -230,9 +234,7 @@ def good_create(request):
             good = form.save(commit=False)
             
             # پیدا کردن بزرگترین کد موجود و اختصاص کد جدید
-            max_code_result = Goodinf.objects.using('legacy').aggregate(max_code=Max('code'))
-            max_code = max_code_result.get('max_code') or 0
-            good.code = max_code + 1
+            good.code = get_new_code(Goodinf)
             
             good.save(using='legacy')
             messages.success(request, f"کالا '{good.name}' با موفقیت ایجاد شد.")
@@ -306,8 +308,7 @@ def store_create(request):
         form = StoreForm(request.POST)
         if form.is_valid():
             store = form.save(commit=False)
-            max_code = Stores.objects.using('legacy').aggregate(max_code=Max('code'))['max_code'] or 0
-            store.code = max_code + 1
+            store.code = get_new_code(Stores)
             store.save(using='legacy')
             messages.success(request, "انبار با موفقیت ایجاد شد.")
             return redirect('accounting:store_list')
@@ -355,8 +356,7 @@ def sandogh_create(request):
         form = SandoghForm(request.POST)
         if form.is_valid():
             sandogh = form.save(commit=False)
-            max_code = SandoghTbl.objects.using('legacy').aggregate(max_code=Max('code'))['max_code'] or 0
-            sandogh.code = max_code + 1
+            sandogh.code = get_new_code(SandoghTbl)
             sandogh.save(using='legacy')
             messages.success(request, "صندوق با موفقیت ایجاد شد.")
             return redirect('accounting:sandogh_list')
@@ -404,8 +404,7 @@ def bank_create(request):
         form = BankForm(request.POST)
         if form.is_valid():
             bank = form.save(commit=False)
-            max_code = Bank.objects.using('legacy').aggregate(max_code=Max('code'))['max_code'] or 0
-            bank.code = max_code + 1
+            bank.code = get_new_code(Bank)
             bank.save(using='legacy')
             messages.success(request, "بانک با موفقیت ایجاد شد.")
             return redirect('accounting:bank_list')
@@ -453,8 +452,7 @@ def income_create(request):
         form = IncomeForm(request.POST)
         if form.is_valid():
             income = form.save(commit=False)
-            max_code = Ldaramad.objects.using('legacy').aggregate(max_code=Max('code'))['max_code'] or 0
-            income.code = max_code + 1
+            income.code = get_new_code(Ldaramad)
             income.save(using='legacy')
             messages.success(request, "درآمد با موفقیت ایجاد شد.")
             return redirect('accounting:income_list')
@@ -502,8 +500,7 @@ def expense_create(request):
         form = ExpenseForm(request.POST)
         if form.is_valid():
             expense = form.save(commit=False)
-            max_code = LHazine.objects.using('legacy').aggregate(max_code=Max('code'))['max_code'] or 0
-            expense.code = max_code + 1
+            expense.code = get_new_code(LHazine)
             expense.save(using='legacy')
             messages.success(request, "هزینه با موفقیت ایجاد شد.")
             return redirect('accounting:expense_list')
@@ -551,8 +548,7 @@ def fiscal_year_create(request):
         form = FiscalYearForm(request.POST)
         if form.is_valid():
             fiscal_year = form.save(commit=False)
-            max_code = Fiscalyear.objects.using('legacy').aggregate(max_code=Max('code'))['max_code'] or 0
-            fiscal_year.code = max_code + 1
+            fiscal_year.code = get_new_code(Fiscalyear)
             fiscal_year.save(using='legacy')
             messages.success(request, "دوره مالی با موفقیت ایجاد شد.")
             return redirect('accounting:fiscal_year_list')
@@ -600,8 +596,7 @@ def check_band_create(request):
         form = CheckBandForm(request.POST)
         if form.is_valid():
             check_band = form.save(commit=False)
-            max_code = Checkband.objects.using('legacy').aggregate(max_code=Max('code'))['max_code'] or 0
-            check_band.code = max_code + 1
+            check_band.code = get_new_code(Checkband)
             check_band.save(using='legacy')
             messages.success(request, "دسته چک با موفقیت ایجاد شد.")
             return redirect('accounting:check_band_list')
@@ -655,8 +650,7 @@ def sale_invoice_create(request):
             invoice = form.save(commit=False)
             
             # تولید کد فاکتور
-            max_code = FactFo.objects.using('legacy').aggregate(max_code=Max('code'))['max_code'] or 0
-            invoice.code = max_code + 1
+            invoice.code = get_new_code(FactFo)
             
             invoice.save(using='legacy')
             

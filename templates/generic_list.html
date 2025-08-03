@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load custom_tags %}
 
 {% block title %}{{ title }}{% endblock %}
 
@@ -65,7 +66,7 @@
                                 {% elif field_name == 'endno' %}
                                     {{ obj.endno|default:"-" }}
                                 {% else %}
-                                    {{ obj|get_attribute:field_name|default:"-" }}
+                                    {{ obj|get_attribute:field_name }}
                                 {% endif %}
                             </td>
                             {% endfor %}
