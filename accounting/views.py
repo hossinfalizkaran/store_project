@@ -2,6 +2,7 @@
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.db.models import Max, Q
 from django.core.paginator import Paginator
@@ -801,7 +802,24 @@ def sanad_detail(request, sanad_id):
     return render(request, 'sanad_detail.html')
 
 def login_view(request):
-    return render(request, 'login.html')
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            login(request, user)
+            messages.success(request, f'خوش آمدید {user.username}!')
+            return redirect('accounting:home')
+        else:
+            messages.error(request, 'نام کاربری یا رمز عبور اشتباه است یا کاربر غیرفعال است.')
+    
+    # واکشی لیست کاربران و ارسال به تمپلیت
+    user_choices = get_active_users_for_login()
+    context = {
+        'user_choices': user_choices
+    }
+    return render(request, 'login.html', context)
 
 def logout_view(request):
     return render(request, 'logout.html')
