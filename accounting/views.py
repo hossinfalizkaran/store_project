@@ -277,6 +277,21 @@ def good_create(request):
             # پیدا کردن بزرگترین کد موجود و اختصاص کد جدید
             good.code = get_new_code(Goodinf)
             
+            # تنظیم مقدار پیش‌فرض برای store اگر انتخاب نشده باشد
+            if not good.store:
+                # پیدا کردن اولین انبار موجود
+                first_store = Stores.objects.using('legacy').first()
+                if first_store:
+                    good.store = first_store
+                else:
+                    # اگر هیچ انباری وجود ندارد، خطا نمایش بده
+                    messages.error(request, "ابتدا باید حداقل یک انبار ایجاد کنید.")
+                    context = {
+                        'form': form,
+                        'form_title': 'ایجاد کالای جدید'
+                    }
+                    return render(request, 'good_form.html', context)
+            
             good.save(using='legacy')
             messages.success(request, f"کالا '{good.name}' با موفقیت ایجاد شد.")
             return redirect('accounting:good_list')
