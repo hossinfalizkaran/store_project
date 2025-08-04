@@ -73,17 +73,17 @@
                                 <tbody>
                                     {% for good in goods %}
                                     <tr>
-                                        <td>{{ good.code }}</td>
-                                        <td><a href="{% url 'accounting:good_detail' good.id %}">{{ good.name }}</a></td>
-                                        <td>{{ good.grpcode.name|default:"-" }}</td>
-                                        <td>{{ good.unit.name|default:"-" }}</td>
-                                        <td>{{ good.consumerprice|floatformat:0|default:"-" }}</td>
+                                        <td>{{ good.Code }}</td>
+                                        <td><a href="{% url 'accounting:good_detail' good.Code %}">{{ good.Name }}</a></td>
+                                        <td>{{ good.GroupName|default:"-" }}</td>
+                                        <td>{{ good.UnitName|default:"-" }}</td>
+                                        <td>{{ good.ConsumerPrice|floatformat:0|default:"-" }}</td>
                                         <td>
                                             <div class="btn-group" role="group">
-                                                <a href="{% url 'accounting:good_update' good.id %}" class="btn btn-sm btn-outline-warning" title="ویرایش (F5)">
+                                                <a href="{% url 'accounting:good_update' good.Code %}" class="btn btn-sm btn-outline-warning" title="ویرایش (F5)">
                                                     <i class="bi bi-pencil"></i>
                                                 </a>
-                                                <a href="{% url 'accounting:good_delete' good.id %}" class="btn btn-sm btn-outline-danger" title="حذف (F7)" onclick="return confirm('آیا از حذف این کالا مطمئن هستید؟');">
+                                                <a href="{% url 'accounting:good_delete' good.Code %}" class="btn btn-sm btn-outline-danger" title="حذف (F7)" onclick="return confirm('آیا از حذف این کالا مطمئن هستید؟');">
                                                     <i class="bi bi-trash"></i>
                                                 </a>
                                             </div>

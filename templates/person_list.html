@@ -33,23 +33,23 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for person in page_obj %}
+                        {% for person in persons %}
                         <tr>
-                            <!-- استفاده از نام فیلدهای صحیح با حروف کوچک -->
-                            <td>{{ person.code }}</td>
+                            <!-- استفاده از نام فیلدهای صحیح از SQL خام (حروف بزرگ) -->
+                            <td>{{ person.Code }}</td>
                             <td>
-                                <a href="{% url 'accounting:person_detail' person.id %}">{{ person.fullname|default:"-" }}</a>
+                                <a href="{% url 'accounting:person_detail' person.Code %}">{{ person.FullName|default:"-" }}</a>
                             </td>
-                            <td>{{ person.grpcode.name|default:"-" }}</td>
+                            <td>{{ person.GroupName|default:"-" }}</td>
                             <td>
-                                {% if person.status == 0 %}
+                                {% if person.Status == 0 %}
                                     <span class="badge bg-success">فعال</span>
                                 {% else %}
                                     <span class="badge bg-secondary">غیرفعال</span>
                                 {% endif %}
                             </td>
                             <td class="text-center">
-                                <a href="{% url 'accounting:person_update' person.id %}" class="btn btn-sm btn-outline-warning" title="ویرایش">
+                                <a href="{% url 'accounting:person_update' person.Code %}" class="btn btn-sm btn-outline-warning" title="ویرایش">
                                     <i class="bi bi-pencil-square"></i>
                                 </a>
                             </td>
