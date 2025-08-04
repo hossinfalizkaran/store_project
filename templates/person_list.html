@@ -1,140 +1,80 @@
 {% extends "base.html" %}
 {% load static %}
-
 {% block title %}لیست اشخاص{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-3">
+<div class="container-fluid mt-4">
     <div class="card shadow-sm">
-        <div class="card-header bg-light">
-            <div class="d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="bi bi-people me-2"></i>لیست اشخاص ({{ total_count }} مورد)
-                </h5>
-                <a href="{% url 'accounting:person_create' %}" class="btn btn-primary btn-sm">
-                    <i class="bi bi-plus-circle me-1"></i> شخص جدید
-                </a>
-            </div>
-            
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="bi bi-people-fill me-2"></i>لیست اشخاص ({{ total_count }} مورد)</h4>
+            <a href="{% url 'accounting:person_create' %}" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-circle me-1"></i> شخص جدید
+            </a>
+        </div>
+        <div class="card-body">
             <!-- فرم جستجو -->
-            <form method="get" class="mt-2">
-                <div class="input-group input-group-sm">
-                    <input type="text" class="form-control" name="q" value="{{ search_query|default:'' }}" 
-                           placeholder="جستجو بر اساس نام یا کد...">
-                    <button class="btn btn-outline-secondary" type="submit">
-                        <i class="bi bi-search"></i> جستجو
-                    </button>
+            <form method="get" class="mb-3">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="q" value="{{ search_query|default:'' }}" placeholder="جستجو بر اساس نام کامل یا کد...">
+                    <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
                 </div>
             </form>
-        </div>
 
-        <div class="card-body p-0">
+            <!-- جدول نمایش اشخاص -->
             <div class="table-responsive">
-                <table class="table table-sm table-hover table-bordered mb-0">
-                    <thead class="table-light">
+                <table class="table table-striped table-hover table-bordered small">
+                    <thead class="table-dark">
                         <tr>
                             <th>کد</th>
                             <th>نام کامل</th>
                             <th>گروه</th>
-                            <th>تلفن</th>
-                            <th>موبایل</th>
+                            <th>وضعیت</th>
                             <th>عملیات</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for person in page_obj %}
                         <tr>
-                            <td>{{ person.Code }}</td>
-                            <td>{{ person.FullName|default:"-" }}</td>
-                            <td>{{ person.GrpName|default:"-" }}</td>
-                            <td>{{ person.Tel1|default:"-" }}</td>
-                            <td>{{ person.Mobile|default:"-" }}</td>
+                            <!-- استفاده از نام فیلدهای صحیح با حروف کوچک -->
+                            <td>{{ person.code }}</td>
                             <td>
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{% url 'accounting:person_detail' person.Code %}" class="btn btn-outline-info btn-sm">
-                                        <i class="bi bi-eye"></i> مشاهده
-                                    </a>
-                                    <a href="{% url 'accounting:person_update' person.Code %}" class="btn btn-outline-warning btn-sm">
-                                        <i class="bi bi-pencil"></i> ویرایش
-                                    </a>
-                                </div>
+                                <a href="{% url 'accounting:person_detail' person.id %}">{{ person.fullname|default:"-" }}</a>
+                            </td>
+                            <td>{{ person.grpcode.name|default:"-" }}</td>
+                            <td>
+                                {% if person.status == 0 %}
+                                    <span class="badge bg-success">فعال</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">غیرفعال</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'accounting:person_update' person.id %}" class="btn btn-sm btn-outline-warning" title="ویرایش">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6" class="text-center text-muted">
-                                <i class="bi bi-inbox"></i> هیچ شخصی یافت نشد.
+                            <td colspan="5" class="text-center p-5">
+                                <i class="bi bi-people" style="font-size: 3rem; color: #6c757d;"></i>
+                                <h5 class="mt-3">هیچ شخصی یافت نشد</h5>
+                                <p class="text-muted">برای شروع، شخص جدیدی اضافه کنید.</p>
+                                <a href="{% url 'accounting:person_create' %}" class="btn btn-primary mt-2">
+                                    <i class="bi bi-plus-circle me-1"></i> افزودن شخص جدید
+                                </a>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-        </div>
-        
-        <!-- صفحه‌بندی -->
-        {% if page_obj.has_other_pages %}
-        <div class="card-footer">
-            <nav aria-label="صفحه‌بندی">
-                <ul class="pagination pagination-sm justify-content-center mb-0">
-                    {% if page_obj.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}">
-                            <i class="bi bi-chevron-double-right"></i>
-                        </a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}">
-                            <i class="bi bi-chevron-right"></i>
-                        </a>
-                    </li>
-                    {% endif %}
 
-                    {% for num in page_obj.paginator.page_range %}
-                        {% if page_obj.number == num %}
-                        <li class="page-item active">
-                            <span class="page-link">{{ num }}</span>
-                        </li>
-                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}">{{ num }}</a>
-                        </li>
-                        {% endif %}
-                    {% endfor %}
-
-                    {% if page_obj.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}">
-                            <i class="bi bi-chevron-left"></i>
-                        </a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}">
-                            <i class="bi bi-chevron-double-left"></i>
-                        </a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </nav>
+            <!-- نمایش صفحه‌بندی -->
+            {% if page_obj.has_other_pages %}
+                {% include 'partials/_pagination.html' %}
+            {% endif %}
         </div>
-        {% endif %}
     </div>
 </div>
-{% endblock %}
-
-{% block extra_script %}
-<script>
-// اضافه کردن قابلیت جستجو با Enter
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.querySelector('input[name="q"]');
-    if (searchInput) {
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                this.form.submit();
-            }
-        });
-    }
-});
-</script>
 {% endblock %} 
