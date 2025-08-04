@@ -179,18 +179,18 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
 # ========================================
-# تنظیمات بکند احراز هویت سفارشی
+# تنظیمات بکند احراز هویت همگام‌سازی
 # ========================================
 
-# استفاده از بکند سفارشی برای احراز هویت
+# استفاده از بکند همگام‌سازی برای احراز هویت
 AUTHENTICATION_BACKENDS = [
-    'accounting.authentication.LegacyDBBackend',
-    # 'django.contrib.auth.backends.ModelBackend',  # این خط را کامنت کرده‌ایم
+    'accounting.authentication.SyncLegacyUserBackend',  # بکند همگام‌سازی ما
+    'django.contrib.auth.backends.ModelBackend',  # بکند پیش‌فرض جنگو
 ]
 
 # ========================================
-# تنظیمات مدل کاربر سفارشی
+# تنظیمات مدل کاربر (استفاده از مدل پیش‌فرض جنگو)
 # ========================================
 
-# به جنگو می‌گوییم مدل کاربر پیش‌فرض ما این است
-AUTH_USER_MODEL = 'accounting.LegacyUser'
+# ما از مدل کاربر پیش‌فرض جنگو استفاده می‌کنیم
+# AUTH_USER_MODEL = 'accounting.LegacyUser'  # کامنت شده
