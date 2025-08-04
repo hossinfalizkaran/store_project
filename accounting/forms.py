@@ -312,7 +312,7 @@ class PersonForm(forms.ModelForm):
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'identifier': forms.TextInput(attrs={'class': 'form-control'}),
             'economicno': forms.TextInput(attrs={'class': 'form-control'}),
-            'sitbgprd': forms.NumberInput(attrs={'class': 'form-control', 'value': '0'}),
+            'sitbgprd': forms.NumberInput(attrs={'class': 'form-control', 'value': '0', 'min': '0'}),
         }
 
         labels = {

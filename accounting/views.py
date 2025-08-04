@@ -162,8 +162,7 @@ def person_create(request):
             person.code = get_new_code(Perinf)
             
             # تنظیم مقدار پیش‌فرض برای sitbgprd
-            if not person.sitbgprd:
-                person.sitbgprd = 0
+            person.sitbgprd = form.cleaned_data.get('sitbgprd', 0)
             
             # ساخت fullname بعد از اعتبارسنجی
             person.fullname = f"{form.cleaned_data.get('name') or ''} {form.cleaned_data.get('lname') or ''}".strip()
@@ -174,7 +173,7 @@ def person_create(request):
         else:
             messages.error(request, "لطفاً خطاهای فرم را برطرف کنید.")
     else:
-        form = PersonForm()
+        form = PersonForm(initial={'sitbgprd': 0})
 
     context = {
         'form': form,
