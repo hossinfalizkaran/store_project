@@ -44,17 +44,17 @@
                     <tbody>
                         {% for person in page_obj %}
                         <tr>
-                            <td>{{ person.code }}</td>
-                            <td>{{ person.fullname|default:"-" }}</td>
-                            <td>{{ person.grpcode.name|default:"-" }}</td>
-                            <td>{{ person.tel1|default:"-" }}</td>
-                            <td>{{ person.mobile|default:"-" }}</td>
+                            <td>{{ person.Code }}</td>
+                            <td>{{ person.FullName|default:"-" }}</td>
+                            <td>{{ person.GrpName|default:"-" }}</td>
+                            <td>{{ person.Tel1|default:"-" }}</td>
+                            <td>{{ person.Mobile|default:"-" }}</td>
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{% url 'accounting:person_detail' person.code %}" class="btn btn-outline-info btn-sm">
+                                    <a href="{% url 'accounting:person_detail' person.Code %}" class="btn btn-outline-info btn-sm">
                                         <i class="bi bi-eye"></i> مشاهده
                                     </a>
-                                    <a href="{% url 'accounting:person_update' person.code %}" class="btn btn-outline-warning btn-sm">
+                                    <a href="{% url 'accounting:person_update' person.Code %}" class="btn btn-outline-warning btn-sm">
                                         <i class="bi bi-pencil"></i> ویرایش
                                     </a>
                                 </div>

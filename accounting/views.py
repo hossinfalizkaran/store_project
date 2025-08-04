@@ -320,10 +320,22 @@ def good_delete(request, good_code):
 # --- Sanad List ---
 @login_required
 def sanad_list(request):
-    sanads = Sanad.objects.using('legacy').all().order_by('-code')
-    paginator = Paginator(sanads, 25)
-    page_obj = paginator.get_page(request.GET.get('page'))
-    context = {'page_obj': page_obj, 'title': 'لیست اسناد حسابداری'}
+    connection = connections['legacy']
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT COUNT(*) FROM Sanad")
+        total_count = cursor.fetchone()[0]
+
+    paginator = Paginator(range(total_count), 25)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    offset = (page_obj.number - 1) * 25
+
+    with connection.cursor() as cursor:
+        query = "SELECT Code, Tarikh, Sharh, Status FROM Sanad ORDER BY Code DESC OFFSET %s ROWS FETCH NEXT %s ROWS ONLY"
+        cursor.execute(query, [offset, 25])
+        sanads = dictfetchall(cursor)
+
+    context = {'page_obj': page_obj, 'sanads': sanads, 'total_count': total_count}
     return render(request, 'sanad_list.html', context)
 
 # --- Generic CRUD Views ---
@@ -530,11 +542,13 @@ def expense_delete(request, pk):
 # --- Fiscal Years ---
 @login_required
 def fiscal_year_list(request):
-    fiscal_years = Fiscalyear.objects.using('legacy').all().order_by('code')
+    fiscal_years = Fiscalyear.objects.using('legacy').all().order_by('id')
     return render(request, 'generic_list.html', {
-        'page_obj': fiscal_years, 'title': 'لیست دوره‌های مالی', 'create_url_name': 'accounting:fiscal_year_create',
-        'update_url_name': 'accounting:fiscal_year_update', 'delete_url_name': 'accounting:fiscal_year_delete',
-        'fields_to_display': ['code', 'name', 'startdate', 'enddate']
+        'page_obj': fiscal_years,
+        'title': 'لیست دوره‌های مالی',
+        'create_url_name': 'accounting:fiscal_year_create',
+        'update_url_name': 'accounting:fiscal_year_update',
+        'fields_to_display': ['id', 'title', 'datestart', 'dateend']
     })
 
 @login_required
@@ -555,17 +569,19 @@ def fiscal_year_update(request, pk):
 def fiscal_year_delete(request, pk):
     return generic_delete_view(
         request, pk, Fiscalyear, 'accounting:fiscal_year_list',
-        'دوره مالی "{}" با موفقیت حذف شد.'
+        'دوره مالی با موفقیت حذف شد.'
     )
 
 # --- Check Bands ---
 @login_required
 def check_band_list(request):
-    check_bands = Checkband.objects.using('legacy').all().order_by('code')
+    check_bands = Checkband.objects.using('legacy').all().order_by('id')
     return render(request, 'generic_list.html', {
-        'page_obj': check_bands, 'title': 'لیست دسته چک‌ها', 'create_url_name': 'accounting:check_band_create',
-        'update_url_name': 'accounting:check_band_update', 'delete_url_name': 'accounting:check_band_delete',
-        'fields_to_display': ['code', 'name', 'startno', 'endno']
+        'page_obj': check_bands,
+        'title': 'لیست دسته چک‌ها',
+        'create_url_name': 'accounting:check_band_create',
+        'update_url_name': 'accounting:check_band_update',
+        'fields_to_display': ['id', 'serial', 'fromnum', 'tonum']
     })
 
 @login_required
@@ -586,7 +602,7 @@ def check_band_update(request, pk):
 def check_band_delete(request, pk):
     return generic_delete_view(
         request, pk, Checkband, 'accounting:check_band_list',
-        'دسته چک "{}" با موفقیت حذف شد.'
+        'دسته چک با موفقیت حذف شد.'
     )
 
 # --- Company Info ---
