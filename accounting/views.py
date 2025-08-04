@@ -161,6 +161,10 @@ def person_create(request):
             # پیدا کردن بزرگترین کد موجود و اختصاص کد جدید
             person.code = get_new_code(Perinf)
             
+            # تنظیم مقدار پیش‌فرض برای sitbgprd
+            if not person.sitbgprd:
+                person.sitbgprd = 0
+            
             # ساخت fullname بعد از اعتبارسنجی
             person.fullname = f"{form.cleaned_data.get('name') or ''} {form.cleaned_data.get('lname') or ''}".strip()
 

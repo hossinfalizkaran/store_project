@@ -297,7 +297,7 @@ class PersonForm(forms.ModelForm):
         # **نکته مهم:** 'grpcode' از این لیست حذف شده چون به صورت دستی تعریف شده
         fields = [
             'name', 'lname', 'tel1', 'mobile', 'addr1', 
-            'email', 'credit', 'status', 'comment', 'identifier', 'economicno'
+            'email', 'credit', 'status', 'comment', 'identifier', 'economicno', 'sitbgprd'
         ]
         
         widgets = {
@@ -312,6 +312,7 @@ class PersonForm(forms.ModelForm):
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'identifier': forms.TextInput(attrs={'class': 'form-control'}),
             'economicno': forms.TextInput(attrs={'class': 'form-control'}),
+            'sitbgprd': forms.NumberInput(attrs={'class': 'form-control', 'value': '0'}),
         }
 
         labels = {
@@ -321,11 +322,12 @@ class PersonForm(forms.ModelForm):
             'mobile': 'موبایل',
             'addr1': 'آدرس',
             'email': 'ایمیل',
-            'credit': 'سقف اعتبار',
+            'credit': 'اعتبار اولیه',
             'status': 'وضعیت',
             'comment': 'توضیحات',
-            'identifier': 'شناسه ملی/کد ملی',
+            'identifier': 'کد ملی/شناسه ملی',
             'economicno': 'کد اقتصادی',
+            'sitbgprd': 'وضعیت دوره قبل',
         }
 
     def __init__(self, *args, **kwargs):
