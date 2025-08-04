@@ -278,7 +278,7 @@ def good_create(request):
             good.code = get_new_code(Goodinf)
             
             # تنظیم مقدار پیش‌فرض برای store اگر انتخاب نشده باشد
-            if not good.store:
+            if not form.cleaned_data.get('store'):
                 # پیدا کردن اولین انبار موجود
                 first_store = Stores.objects.using('legacy').first()
                 if first_store:
