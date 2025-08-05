@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}کاردکس کالا: {{ good.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h4 class="mb-0"><i class="bi bi-card-list me-2"></i>کاردکس کالا: {{ good.name }}</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-bordered small">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>تاریخ</th>
+                            <th>نوع عملیات</th>
+                            <th>شماره سند</th>
+                            <th>طرف حساب</th>
+                            <th class="text-center">ورودی</th>
+                            <th class="text-center">خروجی</th>
+                            <th class="text-center">مانده</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in kardex_entries %}
+                        <tr>
+                            <td>{{ entry.Date }}</td>
+                            <td>{{ entry.OperationType }}</td>
+                            <td>{{ entry.DocumentCode }}</td>
+                            <td>{{ entry.PersonName|default:"-" }}</td>
+                            <td class="text-center text-success">{{ entry.Incoming|floatformat:"-2"|default_if_none:"" }}</td>
+                            <td class="text-center text-danger">{{ entry.Outgoing|floatformat:"-2"|default_if_none:"" }}</td>
+                            <td class="text-center fw-bold">{{ entry.Balance|floatformat:"-2" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" class="text-center">هیچ گردشی برای این کالا ثبت نشده است.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer">
+            <a href="{% url 'accounting:good_detail' good.code %}" class="btn btn-secondary btn-sm">بازگشت به جزئیات کالا</a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

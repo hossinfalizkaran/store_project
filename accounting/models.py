@@ -4389,7 +4389,7 @@ class Perinf(models.Model):
     financegoodtype = models.IntegerField(db_column='FinanceGoodType', blank=True, null=True)  # Field name made lowercase.
     financegoodtypetitle = models.CharField(db_column='FinanceGoodTypeTitle', max_length=100, blank=True, null=True)  # Field name made lowercase.
     deliveryplaceid = models.IntegerField(db_column='DeliveryPlaceId', blank=True, null=True)  # Field name made lowercase.
-    deliveryprice = models.DecimalField(db_column='DeliveryPrice', max_digits=23, decimal_places=9)  # Field name made lowercase.
+    deliveryprice = models.DecimalField(db_column='DeliveryPrice', max_digits=23, decimal_places=9, blank=True, null=True)  # Field name made lowercase.
     branchcode = models.CharField(db_column='BranchCode', max_length=4, blank=True, null=True)  # Field name made lowercase.
 
     class Meta:

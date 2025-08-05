@@ -297,7 +297,7 @@ class PersonForm(forms.ModelForm):
         # **نکته مهم:** 'grpcode' از این لیست حذف شده چون به صورت دستی تعریف شده
         fields = [
             'name', 'lname', 'tel1', 'mobile', 'addr1', 
-            'email', 'credit', 'status', 'comment', 'identifier', 'economicno', 'sitbgprd'
+            'email', 'credit', 'status', 'comment', 'identifier', 'economicno', 'sitbgprd', 'deliveryprice'
         ]
         
         widgets = {
@@ -313,6 +313,7 @@ class PersonForm(forms.ModelForm):
             'identifier': forms.TextInput(attrs={'class': 'form-control'}),
             'economicno': forms.TextInput(attrs={'class': 'form-control'}),
             'sitbgprd': forms.NumberInput(attrs={'class': 'form-control', 'value': '0', 'min': '0'}),
+            'deliveryprice': forms.NumberInput(attrs={'class': 'form-control', 'value': '0', 'min': '0', 'step': '0.01'}),
         }
 
         labels = {
@@ -328,6 +329,7 @@ class PersonForm(forms.ModelForm):
             'identifier': 'کد ملی/شناسه ملی',
             'economicno': 'کد اقتصادی',
             'sitbgprd': 'وضعیت دوره قبل',
+            'deliveryprice': 'قیمت ارسال',
         }
 
     def __init__(self, *args, **kwargs):
@@ -335,12 +337,22 @@ class PersonForm(forms.ModelForm):
         # فقط نام خانوادگی اجباری است
         self.fields['lname'].required = True
         
+        # تنظیم فیلد deliveryprice به صورت اختیاری
+        self.fields['deliveryprice'].required = False
+        
         # تنظیم choices برای فیلد status
         self.fields['status'].widget.choices = [
             (0, 'فعال'),
             (1, 'غیرفعال'),
             (2, 'موقتا غیرفعال')
         ]
+    
+    def clean_deliveryprice(self):
+        """تبدیل مقادیر خالی deliveryprice به 0"""
+        deliveryprice = self.cleaned_data.get('deliveryprice')
+        if deliveryprice is None or deliveryprice == '':
+            return 0
+        return deliveryprice
 
 
 # فرم کالا (GoodForm) را هم برای مراحل بعدی اضافه می‌کنیم
@@ -401,6 +413,16 @@ class GoodForm(forms.ModelForm):
         self.fields['store'].required = False
         self.fields['store'].queryset = Stores.objects.using('legacy').all()
         self.fields['store'].empty_label = "--- بدون انبار ---"
+        
+        # اگر این یک فرم جدید است (نه فرم ویرایش)
+        if not self.instance.pk:
+            try:
+                # واحد "عدد" را پیدا کن (فرض می‌کنیم نام آن 'عدد' است)
+                default_unit = Units.objects.using('legacy').get(name='عدد')
+                self.fields['unit'].initial = default_unit
+            except Units.DoesNotExist:
+                # اگر واحد "عدد" پیدا نشد، کاری انجام نده
+                pass
         
         # سایر فیلدهایی که در مدل blank=True هستند را اختیاری می‌کنیم
         for field_name, field in self.fields.items():
@@ -592,22 +614,52 @@ class BankForm(forms.ModelForm):
 class IncomeForm(forms.ModelForm):
     class Meta:
         model = Ldaramad
-        fields = ['name', 'comment']
-        labels = {'name': 'عنوان درآمد', 'comment': 'توضیحات'}
+        fields = ['name', 'comment', 'defaultcost']
+        labels = {'name': 'عنوان درآمد', 'comment': 'توضیحات', 'defaultcost': 'هزینه پیش‌فرض'}
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'defaultcost': forms.NumberInput(attrs={'class': 'form-control', 'value': '0', 'min': '0', 'step': '0.01'}),
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # تنظیم مقدار پیش‌فرض برای defaultcost
+        self.fields['defaultcost'].initial = 0
+        # تنظیم فیلد defaultcost به صورت اختیاری
+        self.fields['defaultcost'].required = False
+    
+    def clean_defaultcost(self):
+        """تبدیل مقادیر خالی defaultcost به 0"""
+        defaultcost = self.cleaned_data.get('defaultcost')
+        if defaultcost is None or defaultcost == '':
+            return 0
+        return defaultcost
 
 class ExpenseForm(forms.ModelForm):
     class Meta:
         model = LHazine
-        fields = ['name', 'comment']
-        labels = {'name': 'عنوان هزینه', 'comment': 'توضیحات'}
+        fields = ['name', 'comment', 'defaultcost']
+        labels = {'name': 'عنوان هزینه', 'comment': 'توضیحات', 'defaultcost': 'هزینه پیش‌فرض'}
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'defaultcost': forms.NumberInput(attrs={'class': 'form-control', 'value': '0', 'min': '0', 'step': '0.01'}),
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # تنظیم مقدار پیش‌فرض برای defaultcost
+        self.fields['defaultcost'].initial = 0
+        # تنظیم فیلد defaultcost به صورت اختیاری
+        self.fields['defaultcost'].required = False
+    
+    def clean_defaultcost(self):
+        """تبدیل مقادیر خالی defaultcost به 0"""
+        defaultcost = self.cleaned_data.get('defaultcost')
+        if defaultcost is None or defaultcost == '':
+            return 0
+        return defaultcost
 
 class CompanyInfoForm(forms.ModelForm):
     class Meta:
@@ -680,4 +732,27 @@ class CheckBandForm(forms.ModelForm):
             'tonum': forms.NumberInput(attrs={'class': 'form-control'}),
             'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+
+class GoodGroupForm(forms.ModelForm):
+    class Meta:
+        model = Goodgrps
+        fields = ['code', 'name', 'comment']
+        labels = {'code': 'کد گروه', 'name': 'نام گروه', 'comment': 'توضیحات'}
+        widgets = {
+            'code': forms.NumberInput(attrs={'class': 'form-control'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+
+class PersonGroupForm(forms.ModelForm):
+    class Meta:
+        model = Pergrp
+        fields = ['code', 'name']
+        labels = {'code': 'کد گروه', 'name': 'نام گروه'}
+        widgets = {
+            'code': forms.NumberInput(attrs={'class': 'form-control'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
         } 

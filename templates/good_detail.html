@@ -1,129 +1,62 @@
 {% extends "base.html" %}
-
-{% block title %}جزئیات کالا - {{ good.name }} - سیستم حسابداری محک{% endblock %}
+{% block title %}جزئیات کالا - {{ good.name }}{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-box-seam text-warning"></i> جزئیات کالا</h2>
-        <div>
-            <a href="{% url 'accounting:good_update' good.code %}" class="btn btn-warning">ویرایش</a>
-            <a href="{% url 'accounting:good_list' %}" class="btn btn-secondary">بازگشت به لیست</a>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="mb-0">
-                        <i class="bi bi-box-seam"></i>
-                        اطلاعات کالا
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <table class="table table-borderless">
-                                <tr>
-                                    <th class="text-muted">کد:</th>
-                                    <td>{{ good.code }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="text-muted">نام کالا:</th>
-                                    <td>{{ good.name }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="text-muted">نام اختصاری:</th>
-                                    <td>{{ good.abbname|default:"-" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="text-muted">گروه:</th>
-                                    <td>{{ good.goodgrp.name|default:"-" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="text-muted">واحد اصلی:</th>
-                                    <td>{{ good.unit.name|default:"-" }}</td>
-                                </tr>
-                            </table>
-                        </div>
-                        <div class="col-md-6">
-                            <table class="table table-borderless">
-                                <tr>
-                                    <th class="text-muted">واحد فرعی:</th>
-                                    <td>{{ good.unit2.name|default:"-" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="text-muted">انبار:</th>
-                                    <td>{{ good.store.name|default:"-" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="text-muted">قیمت مصرف‌کننده:</th>
-                                    <td>{{ good.consumerprice|floatformat:0|default:"-" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="text-muted">وضعیت:</th>
-                                    <td>
-                                        {% if good.status %}
-                                            <span class="badge bg-success">فعال</span>
-                                        {% else %}
-                                            <span class="badge bg-danger">غیرفعال</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th class="text-muted">معاف از مالیات:</th>
-                                    <td>
-                                        {% if good.taxexempt %}
-                                            <span class="badge bg-warning">بله</span>
-                                        {% else %}
-                                            <span class="badge bg-info">خیر</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    {% if good.comment %}
-                    <div class="mt-4">
-                        <h6 class="text-muted">توضیحات:</h6>
-                        <p class="border rounded p-3 bg-light">
-                            {{ good.comment }}
-                        </p>
-                    </div>
-                    {% endif %}
-                </div>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="bi bi-box-seam me-2"></i>{{ good.name }} <small class="text-muted">(کد: {{ good.code }})</small></h4>
+            <div>
+                <a href="{% url 'accounting:good_kardex' good.code %}" class="btn btn-info btn-sm">
+                    <i class="bi bi-card-list me-1"></i> نمایش گردش (کاردکس)
+                </a>
+                <a href="{% url 'accounting:good_update' good.code %}" class="btn btn-warning btn-sm">
+                    <i class="bi bi-pencil-square me-1"></i> ویرایش
+                </a>
             </div>
         </div>
-        
-        <div class="col-md-4">
-            <div class="card shadow">
-                <div class="card-header bg-info text-white">
-                    <h6 class="mb-0">
-                        <i class="bi bi-info-circle"></i>
-                        اطلاعات تکمیلی
-                    </h6>
+        <div class="card-body">
+            <div class="row">
+                <!-- ستون اطلاعات اصلی -->
+                <div class="col-md-6">
+                    <h5>مشخصات اصلی</h5>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>گروه:</strong> {{ good.grpcode.name|default:'-' }}</li>
+                        <li class="list-group-item"><strong>واحد اصلی:</strong> {{ good.unit.name|default:'-' }}</li>
+                        <li class="list-group-item"><strong>قیمت مصرف‌کننده:</strong> {{ good.consumerprice|default:'-' }}</li>
+                        <li class="list-group-item"><strong>وضعیت:</strong> {{ good.status }}</li>
+                        <li class="list-group-item"><strong>توضیحات:</strong> {{ good.comment|default:'-' }}</li>
+                    </ul>
                 </div>
-                <div class="card-body">
-                    <table class="table table-sm">
-                        <tr>
-                            <th class="text-muted">تاریخ ثبت:</th>
-                            <td>{{ good.date|default:"-" }}</td>
-                        </tr>
-                        <tr>
-                            <th class="text-muted">معاف از عوارض:</th>
-                            <td>
-                                {% if good.chargeexempt %}
-                                    <span class="badge bg-warning">بله</span>
-                                {% else %}
-                                    <span class="badge bg-info">خیر</span>
-                                {% endif %}
-                            </td>
-                        </tr>
+
+                <!-- ستون موجودی در انبارها -->
+                <div class="col-md-6">
+                    <h5>موجودی در انبارها</h5>
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>انبار</th>
+                                <th class="text-center">موجودی</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in inventory_by_store %}
+                            <tr>
+                                <td>{{ item.StoreName }}</td>
+                                <td class="text-center fw-bold">{{ item.FinalInventory|floatformat:"-2" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="2" class="text-center text-muted">این کالا در هیچ انباری موجودی ندارد.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
                     </table>
                 </div>
             </div>
+        </div>
+        <div class="card-footer">
+            <a href="{% url 'accounting:good_list' %}" class="btn btn-secondary btn-sm">بازگشت به لیست کالاها</a>
         </div>
     </div>
 </div>

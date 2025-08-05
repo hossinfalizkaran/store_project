@@ -4,6 +4,9 @@ from . import views
 app_name = 'accounting'
 
 urlpatterns = [
+    # Development Dashboard
+    path('dev-dashboard/', views.development_dashboard, name='dev_dashboard'),
+    
     # Home
     path('', views.home, name='home'),
     
@@ -17,12 +20,25 @@ urlpatterns = [
     path('persons/<int:person_id>/', views.person_detail, name='person_detail'),
     path('persons/<int:person_id>/edit/', views.person_update, name='person_update'),
     
+    # Person Groups
+    path('person-groups/', views.person_group_list, name='person_group_list'),
+    path('person-groups/new/', views.person_group_create, name='person_group_create'),
+    path('person-groups/<int:pk>/edit/', views.person_group_update, name='person_group_update'),
+    path('person-groups/<int:pk>/delete/', views.person_group_delete, name='person_group_delete'),
+    
     # Goods
     path('goods/', views.good_list, name='good_list'),
     path('goods/new/', views.good_create, name='good_create'),
     path('goods/<int:good_id>/', views.good_detail, name='good_detail'),
     path('goods/<int:good_id>/edit/', views.good_update, name='good_update'),
+    path('goods/<int:good_id>/kardex/', views.good_kardex, name='good_kardex'),
     path('goods/<int:good_code>/delete/', views.good_delete, name='good_delete'),
+    
+    # Good Groups
+    path('good-groups/', views.good_group_list, name='good_group_list'),
+    path('good-groups/new/', views.good_group_create, name='good_group_create'),
+    path('good-groups/<int:pk>/edit/', views.good_group_update, name='good_group_update'),
+    path('good-groups/<int:pk>/delete/', views.good_group_delete, name='good_group_delete'),
     
     # Sanads
     path('sanads/', views.sanad_list, name='sanad_list'),

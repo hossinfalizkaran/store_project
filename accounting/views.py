@@ -26,7 +26,7 @@ from .models import (
 from .forms import (
     PersonForm, GoodForm, StoreForm, SandoghForm, BankForm,
     IncomeForm, ExpenseForm, CompanyInfoForm, FiscalYearForm, CheckBandForm,
-    SaleInvoiceForm, SaleInvoiceDetailFormSet
+    SaleInvoiceForm, SaleInvoiceDetailFormSet, GoodGroupForm, PersonGroupForm
 )
 
 # Helper function to convert raw query results to dictionaries
@@ -164,6 +164,9 @@ def person_create(request):
             # تنظیم مقدار پیش‌فرض برای sitbgprd
             person.sitbgprd = form.cleaned_data.get('sitbgprd', 0)
             
+            # تنظیم مقدار پیش‌فرض برای deliveryprice
+            person.deliveryprice = form.cleaned_data.get('deliveryprice', 0)
+            
             # ساخت fullname بعد از اعتبارسنجی
             person.fullname = f"{form.cleaned_data.get('name') or ''} {form.cleaned_data.get('lname') or ''}".strip()
 
@@ -173,7 +176,7 @@ def person_create(request):
         else:
             messages.error(request, "لطفاً خطاهای فرم را برطرف کنید.")
     else:
-        form = PersonForm(initial={'sitbgprd': 0})
+        form = PersonForm(initial={'sitbgprd': 0, 'deliveryprice': 0})
 
     context = {
         'form': form,
@@ -260,10 +263,31 @@ def good_list(request):
 
 @login_required
 def good_detail(request, good_id):
-    good = get_object_or_404(Goodinf.objects.using('legacy').select_related('grpcode', 'unit'), code=good_id)
+    connection = connections['legacy']
+    
+    # واکشی اطلاعات اصلی کالا
+    good = get_object_or_404(Goodinf.objects.using('legacy'), pk=good_id)
+    
+    # کوئری SQL خام برای محاسبه موجودی کالا در هر انبار
+    inventory_query = """
+        SELECT 
+            s.Name as StoreName,
+            SUM(CASE WHEN k.Type < 10 THEN k.Tedad ELSE -k.Tedad END) as FinalInventory
+        FROM Kardex k
+        JOIN Stores s ON k.Anbar = s.Code
+        WHERE k.Kala = %s
+        GROUP BY s.Name
+        HAVING SUM(CASE WHEN k.Type < 10 THEN k.Tedad ELSE -k.Tedad END) != 0
+        ORDER BY s.Name
+    """
+    
+    with connection.cursor() as cursor:
+        cursor.execute(inventory_query, [good_id])
+        inventory_by_store = dictfetchall(cursor)
+
     context = {
         'good': good,
-        'title': f'جزئیات کالا - {good.name or good.code}',
+        'inventory_by_store': inventory_by_store
     }
     return render(request, 'good_detail.html', context)
 
@@ -312,7 +336,8 @@ def good_update(request, good_id):
     if request.method == 'POST':
         form = GoodForm(request.POST, instance=good)
         if form.is_valid():
-            form.save(using='legacy')
+            updated_good = form.save(commit=False)
+            updated_good.save(using='legacy')
             messages.success(request, f"اطلاعات کالا '{good.name}' با موفقیت ویرایش شد.")
             return redirect('accounting:good_detail', good_id=good.code)
         else:
@@ -334,6 +359,48 @@ def good_delete(request, good_code):
     good.delete()
     messages.success(request, f"کالا '{good_name}' با موفقیت حذف شد.")
     return redirect('accounting:good_list')
+
+@login_required
+def good_kardex(request, good_id):
+    connection = connections['legacy']
+    good = get_object_or_404(Goodinf.objects.using('legacy'), pk=good_id)
+
+    # کوئری SQL خام برای واکشی تمام تراکنش‌های یک کالا از کاردکس
+    kardex_query = """
+        SELECT 
+            k.Date,
+            CASE 
+                WHEN k.Type = 1 THEN 'فاکتور خرید'
+                WHEN k.Type = 5 THEN 'فاکتور فروش'
+                WHEN k.Type = 2 THEN 'برگشت از فروش'
+                WHEN k.Type = 6 THEN 'برگشت از خرید'
+                ELSE 'سایر' 
+            END as OperationType,
+            k.Code as DocumentCode,
+            p.FullName as PersonName,
+            CASE WHEN k.Type < 10 THEN k.Tedad ELSE 0 END as Incoming,
+            CASE WHEN k.Type >= 10 THEN k.Tedad ELSE 0 END as Outgoing
+        FROM Kardex k
+        LEFT JOIN PerInf p ON k.PerCode = p.Code
+        WHERE k.Kala = %s
+        ORDER BY k.Date, k.Radif
+    """
+    
+    with connection.cursor() as cursor:
+        cursor.execute(kardex_query, [good_id])
+        kardex_entries = dictfetchall(cursor)
+
+    # محاسبه موجودی در هر ردیف
+    running_balance = 0
+    for entry in kardex_entries:
+        running_balance += (entry['Incoming'] or 0) - (entry['Outgoing'] or 0)
+        entry['Balance'] = running_balance
+
+    context = {
+        'good': good,
+        'kardex_entries': kardex_entries
+    }
+    return render(request, 'good_kardex.html', context)
 
 # --- Sanad List ---
 @login_required
@@ -380,11 +447,16 @@ def generic_create_view(request, form_class, model, template_name, context_data,
 
 @login_required
 def generic_update_view(request, pk, form_class, model, template_name, context_data, redirect_url_name):
-    instance = get_object_or_404(model.objects.using('legacy'), pk=pk)
+    # برای مدل‌هایی که از code به عنوان primary key استفاده می‌کنند
+    if hasattr(model, '_meta') and hasattr(model._meta, 'pk') and model._meta.pk.name == 'code':
+        instance = get_object_or_404(model.objects.using('legacy'), code=pk)
+    else:
+        instance = get_object_or_404(model.objects.using('legacy'), pk=pk)
     if request.method == 'POST':
         form = form_class(request.POST, instance=instance)
         if form.is_valid():
-            form.save(using='legacy')
+            updated_instance = form.save(commit=False)
+            updated_instance.save(using='legacy')
             messages.success(request, "مورد با موفقیت ویرایش شد.")
             return redirect(redirect_url_name)
     else:
@@ -396,7 +468,11 @@ def generic_update_view(request, pk, form_class, model, template_name, context_d
 
 @login_required
 def generic_delete_view(request, pk, model, redirect_url_name, success_message):
-    instance = get_object_or_404(model.objects.using('legacy'), pk=pk)
+    # برای مدل‌هایی که از code به عنوان primary key استفاده می‌کنند
+    if hasattr(model, '_meta') and hasattr(model._meta, 'pk') and model._meta.pk.name == 'code':
+        instance = get_object_or_404(model.objects.using('legacy'), code=pk)
+    else:
+        instance = get_object_or_404(model.objects.using('legacy'), pk=pk)
     instance_name = getattr(instance, 'name', str(instance))
     instance.delete()
     messages.success(request, success_message.format(instance_name))
@@ -675,7 +751,9 @@ def sale_invoice_create(request):
             # ذخیره جزئیات فاکتور
             formset = SaleInvoiceDetailFormSet(request.POST, instance=invoice)
             if formset.is_valid():
-                formset.save(using='legacy')
+                instances = formset.save(commit=False)
+                for instance in instances:
+                    instance.save(using='legacy')
                 
                 # عملیات انبار (کاردکس)
                 for detail in formset.instances:
@@ -749,7 +827,63 @@ def cheque_pay_create(request):
 
 @login_required
 def inventory_report(request):
-    return render(request, 'inventory_report.html')
+    """
+    نمایش گزارش موجودی کالاها به تفکیک انبار.
+    """
+    connection = connections['legacy']
+    
+    # واکشی لیست انبارها برای استفاده در فیلتر
+    stores = Stores.objects.using('legacy').all().order_by('name')
+
+    # دریافت پارامترهای فیلتر از URL
+    selected_store_id = request.GET.get('store', '')
+    search_query = request.GET.get('q', '').strip()
+
+    params = []
+    where_clauses = []
+
+    # ساخت بخش WHERE کوئری بر اساس فیلترها
+    if selected_store_id:
+        where_clauses.append("k.Anbar = %s")
+        params.append(selected_store_id)
+    
+    if search_query:
+        collation = "COLLATE Persian_100_CI_AI"
+        where_clauses.append(f"(g.Name {collation} LIKE %s OR CAST(g.Code AS VARCHAR(20)) LIKE %s)")
+        params.extend([f'%{search_query}%', f'%{search_query}%'])
+
+    where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
+
+    # کوئری اصلی برای واکشی موجودی کالاها
+    # ما با GROUP BY موجودی هر کالا را در هر انبار محاسبه می‌کنیم
+    query = f"""
+        SELECT 
+            g.Code as GoodCode,
+            g.Name as GoodName,
+            s.Code as StoreCode,
+            s.Name as StoreName,
+            SUM(CASE WHEN k.Type < 10 THEN k.Tedad ELSE -k.Tedad END) as FinalInventory
+        FROM Kardex k
+        JOIN GoodInf g ON k.Kala = g.Code
+        JOIN Stores s ON k.Anbar = s.Code
+        {where_sql}
+        GROUP BY g.Code, g.Name, s.Code, s.Name
+        HAVING SUM(CASE WHEN k.Type < 10 THEN k.Tedad ELSE -k.Tedad END) != 0
+        ORDER BY s.Name, g.Name
+    """
+
+    with connection.cursor() as cursor:
+        cursor.execute(query, params)
+        inventory_data = dictfetchall(cursor) # از تابع کمکی dictfetchall استفاده می‌کنیم
+
+    context = {
+        'inventory_data': inventory_data,
+        'stores': stores,
+        'selected_store_id': selected_store_id,
+        'search_query': search_query,
+        'total_count': len(inventory_data),
+    }
+    return render(request, 'reports/inventory_report.html', context)
 
 @login_required
 def financial_report(request):
@@ -825,7 +959,10 @@ def login_view(request):
     return render(request, 'login.html', context)
 
 def logout_view(request):
-    return render(request, 'logout.html')
+    from django.contrib.auth import logout
+    logout(request)
+    messages.success(request, 'شما با موفقیت از سیستم خارج شدید.')
+    return redirect('accounting:login')
 
 @login_required
 def user_list(request):
@@ -841,4 +978,185 @@ def test_password_formats(request):
 
 @login_required
 def export_users_passwords(request):
-    return render(request, 'export_users_passwords.html') 
+    return render(request, 'export_users_passwords.html')
+
+@login_required
+def development_dashboard(request):
+    # لیستی از مدل‌های پایه به همراه نام URL ها و عناوین فارسی
+    # این لیست به عنوان "تنظیمات" داشبورد ما عمل می‌کند
+    
+    basic_info_models = [
+        {
+            'title': 'اشخاص',
+            'icon': 'bi-people-fill',
+            'list_url': 'accounting:person_list',
+            'create_url': 'accounting:person_create',
+        },
+        {
+            'title': 'گروه‌های اشخاص',
+            'icon': 'bi-people',
+            'list_url': 'accounting:person_group_list',
+            'create_url': 'accounting:person_group_create',
+        },
+        {
+            'title': 'کالاها و خدمات',
+            'icon': 'bi-box-seam',
+            'list_url': 'accounting:good_list',
+            'create_url': 'accounting:good_create',
+        },
+        {
+            'title': 'گروه‌های کالا',
+            'icon': 'bi-collection',
+            'list_url': 'accounting:good_group_list',
+            'create_url': 'accounting:good_group_create',
+        },
+        {
+            'title': 'انبارها',
+            'icon': 'bi-house-door-fill',
+            'list_url': 'accounting:store_list',
+            'create_url': 'accounting:store_create',
+        },
+        {
+            'title': 'صندوق‌ها',
+            'icon': 'bi-safe-fill',
+            'list_url': 'accounting:sandogh_list',
+            'create_url': 'accounting:sandogh_create',
+        },
+        {
+            'title': 'بانک‌ها',
+            'icon': 'bi-bank',
+            'list_url': 'accounting:bank_list',
+            'create_url': 'accounting:bank_create',
+        },
+        {
+            'title': 'دوره‌های مالی',
+            'icon': 'bi-calendar-range-fill',
+            'list_url': 'accounting:fiscal_year_list',
+            'create_url': 'accounting:fiscal_year_create',
+        },
+        {
+            'title': 'دسته چک‌ها',
+            'icon': 'bi-stickies-fill',
+            'list_url': 'accounting:check_band_list',
+            'create_url': 'accounting:check_band_create',
+        },
+        {
+            'title': 'عناوین درآمد',
+            'icon': 'bi-arrow-down-left-circle-fill',
+            'list_url': 'accounting:income_list',
+            'create_url': 'accounting:income_create',
+        },
+        {
+            'title': 'عناوین هزینه',
+            'icon': 'bi-arrow-up-right-circle-fill',
+            'list_url': 'accounting:expense_list',
+            'create_url': 'accounting:expense_create',
+        },
+        {
+            'title': 'مشخصات شرکت',
+            'icon': 'bi-building-fill',
+            'list_url': 'accounting:company_info_update', # این بخش فقط ویرایش دارد
+            'create_url': None, # ایجاد ندارد
+        },
+    ]
+    
+    context = {
+        'basic_info_models': basic_info_models,
+    }
+    return render(request, 'development_dashboard.html', context)
+
+
+# ========================================
+# ویوهای مدیریت گروه‌های کالا
+# ========================================
+
+@login_required
+def good_group_list(request):
+    groups = Goodgrps.objects.using('legacy').all().order_by('code')
+    return render(request, 'good_group_list.html', {'groups': groups})
+
+@login_required
+def good_group_create(request):
+    if request.method == 'POST':
+        form = GoodGroupForm(request.POST)
+        if form.is_valid():
+            form.save(using='legacy')
+            messages.success(request, 'گروه کالای جدید با موفقیت ایجاد شد.')
+            return redirect('accounting:good_group_list')
+    else:
+        form = GoodGroupForm()
+    return render(request, 'generic_form.html', {'form': form, 'form_title': 'ایجاد گروه کالای جدید'})
+
+@login_required
+def good_group_update(request, pk):
+    group = get_object_or_404(Goodgrps, pk=pk, using='legacy')
+    if request.method == 'POST':
+        form = GoodGroupForm(request.POST, instance=group)
+        if form.is_valid():
+            form.save(using='legacy')
+            messages.success(request, 'گروه کالا با موفقیت ویرایش شد.')
+            return redirect('accounting:good_group_list')
+    else:
+        form = GoodGroupForm(instance=group)
+    return render(request, 'generic_form.html', {'form': form, 'form_title': f'ویرایش گروه: {group.name}'})
+
+@login_required
+def good_group_delete(request, pk):
+    group = get_object_or_404(Goodgrps, pk=pk, using='legacy')
+    # بررسی اینکه آیا کالایی به این گروه اختصاص داده شده است یا خیر
+    if Goodinf.objects.using('legacy').filter(grpcode=group).exists():
+        messages.error(request, f'نمی‌توان گروه "{group.name}" را حذف کرد زیرا کالاهایی به آن اختصاص داده شده‌اند.')
+        return redirect('accounting:good_group_list')
+    
+    group_name = group.name
+    group.delete(using='legacy')
+    messages.success(request, f'گروه "{group_name}" با موفقیت حذف شد.')
+    return redirect('accounting:good_group_list')
+
+
+# ========================================
+# ویوهای مدیریت گروه‌های اشخاص
+# ========================================
+
+@login_required
+def person_group_list(request):
+    groups = Pergrp.objects.using('legacy').all().order_by('code')
+    return render(request, 'person_group_list.html', {'groups': groups})
+
+@login_required
+def person_group_create(request):
+    if request.method == 'POST':
+        form = PersonGroupForm(request.POST)
+        if form.is_valid():
+            form.save(using='legacy')
+            messages.success(request, 'گروه شخص جدید با موفقیت ایجاد شد.')
+            return redirect('accounting:person_group_list')
+    else:
+        form = PersonGroupForm()
+    return render(request, 'generic_form.html', {'form': form, 'form_title': 'ایجاد گروه شخص جدید'})
+
+@login_required
+def person_group_update(request, pk):
+    group = get_object_or_404(Pergrp, pk=pk, using='legacy')
+    if request.method == 'POST':
+        form = PersonGroupForm(request.POST, instance=group)
+        if form.is_valid():
+            form.save(using='legacy')
+            messages.success(request, 'گروه شخص با موفقیت ویرایش شد.')
+            return redirect('accounting:person_group_list')
+    else:
+        form = PersonGroupForm(instance=group)
+    return render(request, 'generic_form.html', {'form': form, 'form_title': f'ویرایش گروه: {group.name}'})
+
+@login_required
+def person_group_delete(request, pk):
+    group = get_object_or_404(Pergrp, pk=pk, using='legacy')
+    # بررسی اینکه آیا شخصی به این گروه اختصاص داده شده است یا خیر
+    if Perinf.objects.using('legacy').filter(grpcode=group).exists():
+        messages.error(request, f'نمی‌توان گروه "{group.name}" را حذف کرد زیرا اشخاصی به آن اختصاص داده شده‌اند.')
+        return redirect('accounting:person_group_list')
+    
+    group_name = group.name
+    group.delete(using='legacy')
+    messages.success(request, f'گروه "{group_name}" با موفقیت حذف شد.')
+    return redirect('accounting:person_group_list') 

@@ -54,24 +54,42 @@
                             <i class="bi bi-gear"></i> توسعه
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'accounting:dev_dashboard' %}">
+                            <i class="bi bi-speedometer2"></i> داشبورد تست
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-clipboard-data"></i> گزارش‌ها
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'accounting:inventory_report' %}">
+                                    <i class="bi bi-box-seam"></i> گزارش موجودی
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'accounting:financial_report' %}">
+                                    <i class="bi bi-graph-up"></i> گزارش مالی
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                 </ul>
                 
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                        <li class="nav-item">
+                            <span class="nav-link">
                                 <i class="bi bi-person-circle"></i>
                                 {{ user.username|default:"کاربر" }}
+                            </span>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-danger" href="{% url 'accounting:logout' %}">
+                                <i class="bi bi-box-arrow-right"></i> خروج
                             </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'accounting:user_list' %}">
-                                    <i class="bi bi-people"></i> مدیریت کاربران
-                                </a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'accounting:logout' %}">
-                                    <i class="bi bi-box-arrow-right"></i> خروج
-                                </a></li>
-                            </ul>
                         </li>
                     {% else %}
                         <li class="nav-item">

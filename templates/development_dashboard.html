@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}داشبورد توسعه{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h4 class="mb-0"><i class="bi bi-speedometer2 me-2"></i>داشبورد تست و توسعه</h4>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">از این صفحه برای تست سریع تمام لینک‌های مربوط به مدیریت اطلاعات پایه استفاده کنید.</p>
+            
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>موجودیت</th>
+                            <th>عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in basic_info_models %}
+                        <tr>
+                            <td>
+                                <i class="bi {{ item.icon }} me-2"></i>
+                                <strong>{{ item.title }}</strong>
+                            </td>
+                            <td>
+                                {% if item.list_url %}
+                                    <a href="{% url item.list_url %}" class="btn btn-sm btn-info">
+                                        <i class="bi bi-list-ul me-1"></i> مشاهده لیست
+                                    </a>
+                                {% endif %}
+                                
+                                {% if item.create_url %}
+                                    <a href="{% url item.create_url %}" class="btn btn-sm btn-success">
+                                        <i class="bi bi-plus-circle me-1"></i> ایجاد جدید
+                                    </a>
+                                {% else %}
+                                    <!-- برای مواردی مثل مشخصات شرکت که ایجاد ندارند -->
+                                    <span class="text-muted fst-italic">--</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
