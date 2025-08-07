@@ -2,7 +2,7 @@
 
 from django import template
 import jdatetime
-from datetime import datetime
+from datetime import datetime, timedelta
 
 register = template.Library()
 
@@ -35,4 +35,25 @@ def to_jalali(gregorian_date_str):
         return jalali_date.strftime('%Y/%m/%d')
     except (ValueError, TypeError):
         # در صورت بروز هرگونه خطا، مقدار اصلی را برگردان
-        return gregorian_date_str 
+        return gregorian_date_str
+
+@register.filter
+def get_jalali_today(value):
+    return jdatetime.date.today().strftime('%Y/%m/%d')
+
+@register.filter
+def get_jalali_first_of_month(value):
+    return jdatetime.date.today().replace(day=1).strftime('%Y/%m/%d')
+    
+@register.filter
+def get_jalali_first_of_year(value):
+    return jdatetime.date.today().replace(day=1, month=1).strftime('%Y/%m/%d')
+
+@register.filter
+def get_jalali_days_ago(value, days):
+    """تاریخ X روز قبل را به صورت شمسی برمی‌گرداند."""
+    try:
+        gregorian_ago = datetime.now() - timedelta(days=int(days))
+        return jdatetime.date.fromgregorian(date=gregorian_ago).strftime('%Y/%m/%d')
+    except:
+        return "" 

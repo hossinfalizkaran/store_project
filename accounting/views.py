@@ -365,40 +365,164 @@ def good_kardex(request, good_id):
     connection = connections['legacy']
     good = get_object_or_404(Goodinf.objects.using('legacy'), pk=good_id)
 
-    # کوئری SQL خام برای واکشی تمام تراکنش‌های یک کالا از کاردکس
+    # --- دریافت تنظیمات از پارامترهای URL ---
+    page_size = int(request.GET.get('page_size', 25))
+    sort_column = request.GET.get('sort_column', 'Date')
+    sort_direction = request.GET.get('sort_direction', 'desc')
+    
+    # فیلترهای اضافی
+    operation_type_filter = request.GET.get('operation_type', '')
+    store_filter = request.GET.get('store', '')
+    person_filter = request.GET.get('person', '')
+    document_code_filter = request.GET.get('document_code', '')
+
+    # --- مدیریت و اعتبارسنجی تاریخ ---
+    today_jalali = jdatetime.date.today()
+    start_date_str = request.GET.get('start_date', '').strip()
+    end_date_str = request.GET.get('end_date', '').strip()
+
+    # اعتبارسنجی و تنظیم تاریخ‌های پیش‌فرض
+    try:
+        start_date_jalali = jdatetime.datetime.strptime(start_date_str, '%Y/%m/%d').date()
+    except (ValueError, TypeError):
+        # اگر تاریخ شروع مشخص نشده، از ابتدای سال جاری
+        start_date_jalali = today_jalali.replace(month=1, day=1)
+
+    try:
+        end_date_jalali = jdatetime.datetime.strptime(end_date_str, '%Y/%m/%d').date()
+    except (ValueError, TypeError):
+        end_date_jalali = today_jalali
+    
+    # تاریخ‌ها در دیتابیس به فرمت شمسی ذخیره شده‌اند، پس نیازی به تبدیل نیست
+    start_date_str = start_date_jalali.strftime('%Y/%m/%d')
+    end_date_str = end_date_jalali.strftime('%Y/%m/%d')
+
+    # ۱. محاسبه موجودی اولیه (مانده از قبل)
+    opening_balance = 0
+    balance_before_query = """
+        SELECT SUM(CASE WHEN Type < 10 THEN Tedad ELSE -Tedad END)
+        FROM Kardex
+        WHERE Kala = %s AND Date < %s
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(balance_before_query, [good_id, start_date_str])
+        result = cursor.fetchone()
+        if result:
+            opening_balance = result[0] or 0.0
+
+    # ۲. واکشی گردش کالا در بازه زمانی انتخاب شده
     kardex_query = """
         SELECT 
-            k.Date,
-            CASE 
-                WHEN k.Type = 1 THEN 'فاکتور خرید'
-                WHEN k.Type = 5 THEN 'فاکتور فروش'
-                WHEN k.Type = 2 THEN 'برگشت از فروش'
-                WHEN k.Type = 6 THEN 'برگشت از خرید'
-                ELSE 'سایر' 
-            END as OperationType,
-            k.Code as DocumentCode,
-            p.FullName as PersonName,
-            CASE WHEN k.Type < 10 THEN k.Tedad ELSE 0 END as Incoming,
-            CASE WHEN k.Type >= 10 THEN k.Tedad ELSE 0 END as Outgoing
+            k.Date, k.Type, k.Code as DocumentCode, p.FullName as PersonName,
+            k.Tedad, k.Amount, s.Name as StoreName
         FROM Kardex k
         LEFT JOIN PerInf p ON k.PerCode = p.Code
-        WHERE k.Kala = %s
-        ORDER BY k.Date, k.Radif
+        LEFT JOIN Stores s ON k.Anbar = s.Code
+        WHERE k.Kala = %s AND k.Date BETWEEN %s AND %s
     """
     
+    params = [good_id, start_date_str, end_date_str]
+    
+    # اضافه کردن فیلترهای اضافی
+    if operation_type_filter:
+        kardex_query += " AND k.Type = %s"
+        params.append(int(operation_type_filter))
+    
+    if store_filter:
+        kardex_query += " AND k.Anbar = %s"
+        params.append(int(store_filter))
+    
+    if person_filter:
+        kardex_query += " AND k.PerCode = %s"
+        params.append(int(person_filter))
+    
+    if document_code_filter:
+        kardex_query += " AND k.Code LIKE %s"
+        params.append(f'%{document_code_filter}%')
+    
+    # مرتب‌سازی
+    sort_mapping = {
+        'Date': 'k.Date',
+        'OperationType': 'k.Type',
+        'DocumentCode': 'k.Code',
+        'PersonName': 'p.FullName',
+        'Incoming': 'CASE WHEN k.Type < 10 THEN k.Tedad ELSE 0 END',
+        'Outgoing': 'CASE WHEN k.Type >= 10 THEN k.Tedad ELSE 0 END',
+        'Amount': 'k.Amount',
+        'Balance': 'k.Radif'  # برای مرتب‌سازی بر اساس ترتیب زمانی
+    }
+    
+    sort_field = sort_mapping.get(sort_column, 'k.Date')
+    kardex_query += f" ORDER BY {sort_field} {sort_direction.upper()}, k.Radif"
+    
     with connection.cursor() as cursor:
-        cursor.execute(kardex_query, [good_id])
-        kardex_entries = dictfetchall(cursor)
+        cursor.execute(kardex_query, params)
+        kardex_entries_raw = dictfetchall(cursor)
 
-    # محاسبه موجودی در هر ردیف
-    running_balance = 0
-    for entry in kardex_entries:
-        running_balance += (entry['Incoming'] or 0) - (entry['Outgoing'] or 0)
+    # ۳. محاسبه مانده در هر ردیف
+    from decimal import Decimal
+    running_balance = Decimal(str(opening_balance or 0))
+    kardex_entries = []
+    for entry in kardex_entries_raw:
+        incoming = Decimal(str(entry['Tedad'] or 0)) if entry['Type'] < 10 else Decimal('0')
+        outgoing = Decimal(str(entry['Tedad'] or 0)) if entry['Type'] >= 10 else Decimal('0')
+        running_balance += incoming - outgoing
+        
+        # تعیین نوع عملیات بر اساس Type
+        operation_type = 'سایر'
+        if entry['Type'] == 1:
+            operation_type = 'فاکتور خرید'
+        elif entry['Type'] == 2:
+            operation_type = 'برگشت از فروش'
+        elif entry['Type'] == 4:
+            operation_type = 'برگشت از خرید'
+        elif entry['Type'] == 5:
+            operation_type = 'فاکتور فروش'
+        elif entry['Type'] == 11:
+            operation_type = 'انتقال انبار'
+        
+        entry['Incoming'] = incoming
+        entry['Outgoing'] = outgoing
         entry['Balance'] = running_balance
+        entry['OperationType'] = operation_type
+        entry['Amount'] = entry['Amount'] or 0
+        entry['StoreName'] = entry['StoreName'] or '-'
+        kardex_entries.append(entry)
+
+    # ۴. صفحه‌بندی
+    from django.core.paginator import Paginator
+    paginator = Paginator(kardex_entries, page_size)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    # ۵. واکشی داده‌های کمکی برای فیلترها
+    stores = Stores.objects.using('legacy').all().order_by('name')
+    operation_types = [
+        {'value': 1, 'name': 'فاکتور خرید'},
+        {'value': 2, 'name': 'برگشت از فروش'},
+        {'value': 4, 'name': 'برگشت از خرید'},
+        {'value': 5, 'name': 'فاکتور فروش'},
+        {'value': 11, 'name': 'انتقال انبار'},
+    ]
 
     context = {
         'good': good,
-        'kardex_entries': kardex_entries
+        'kardex_entries': page_obj,
+        'opening_balance': opening_balance,
+        'start_date': start_date_jalali.strftime('%Y/%m/%d'),
+        'end_date': end_date_jalali.strftime('%Y/%m/%d'),
+        'page_obj': page_obj,
+        'stores': stores,
+        'operation_types': operation_types,
+        'current_settings': {
+            'page_size': page_size,
+            'sort_column': sort_column,
+            'sort_direction': sort_direction,
+            'operation_type_filter': operation_type_filter,
+            'store_filter': store_filter,
+            'person_filter': person_filter,
+            'document_code_filter': document_code_filter,
+        }
     }
     return render(request, 'good_kardex.html', context)
 

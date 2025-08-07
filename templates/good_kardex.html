@@ -1,27 +1,169 @@
 {% extends "base.html" %}
+{% load static persian_filters %}
 {% block title %}کاردکس کالا: {{ good.name }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid mt-4">
     <div class="card shadow-sm">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <h4 class="mb-0"><i class="bi bi-card-list me-2"></i>کاردکس کالا: {{ good.name }}</h4>
+            <div>
+                <button type="button" class="btn btn-outline-primary btn-sm" id="kardex-settings-btn" data-bs-toggle="modal" data-bs-target="#kardex-settings-modal">
+                    <i class="bi bi-gear"></i> تنظیمات نمایش
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm" id="clear-settings-btn">
+                    <i class="bi bi-trash"></i> پاک کردن تنظیمات
+                </button>
+                <a href="{% url 'accounting:good_detail' good.code %}" class="btn btn-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i> بازگشت
+                </a>
+            </div>
         </div>
         <div class="card-body">
+            <!-- فرم فیلترهای پیشرفته -->
+            <form method="get" class="row g-3 align-items-end mb-4 p-3 bg-light border rounded">
+                <div class="col-md-2">
+                    <label for="start_date_input" class="form-label">تاریخ شروع</label>
+                    <input type="text" class="form-control" name="start_date" id="start_date_input" value="{{ start_date }}" placeholder="YYYY/MM/DD">
+                </div>
+                <div class="col-md-2">
+                    <label for="end_date_input" class="form-label">تاریخ پایان</label>
+                    <input type="text" class="form-control" name="end_date" id="end_date_input" value="{{ end_date }}" placeholder="YYYY/MM/DD">
+                </div>
+                <div class="col-md-2">
+                    <label for="date_range_selector" class="form-label">محدوده تاریخ</label>
+                    <select id="date_range_selector" class="form-select">
+                        <option value="custom" selected>انتخاب محدوده...</option>
+                        <option value="today">امروز</option>
+                        <option value="current_month">از ابتدای ماه جاری</option>
+                        <option value="current_year">از ابتدای سال جاری</option>
+                        <option value="last_7_days">۷ روز قبل</option>
+                        <option value="last_30_days">۳۰ روز قبل</option>
+                        <option value="all_time">از ابتدای افتتاح حساب</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="operation_type_filter" class="form-label">نوع عملیات</label>
+                    <select name="operation_type" id="operation_type_filter" class="form-select filter-input" data-filter="operation_type">
+                        <option value="">همه</option>
+                        {% for op_type in operation_types %}
+                            <option value="{{ op_type.value }}" {% if current_settings.operation_type_filter == op_type.value|stringformat:"s" %}selected{% endif %}>
+                                {{ op_type.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="store_filter" class="form-label">انبار</label>
+                    <select name="store" id="store_filter" class="form-select filter-input" data-filter="store">
+                        <option value="">همه انبارها</option>
+                        {% for store in stores %}
+                            <option value="{{ store.code }}" {% if current_settings.store_filter == store.code|stringformat:"s" %}selected{% endif %}>
+                                {{ store.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="document_code_filter" class="form-label">شماره سند</label>
+                    <input type="text" name="document_code" id="document_code_filter" class="form-control filter-input" data-filter="document_code" value="{{ current_settings.document_code_filter }}" placeholder="جستجو...">
+                </div>
+                <div class="col-md-2">
+                    <label for="page-size-select" class="form-label">تعداد در صفحه</label>
+                    <select name="page_size" id="page-size-select" class="form-select">
+                        <option value="10" {% if current_settings.page_size == 10 %}selected{% endif %}>۱۰</option>
+                        <option value="25" {% if current_settings.page_size == 25 %}selected{% endif %}>۲۵</option>
+                        <option value="50" {% if current_settings.page_size == 50 %}selected{% endif %}>۵۰</option>
+                        <option value="100" {% if current_settings.page_size == 100 %}selected{% endif %}>۱۰۰</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-filter"></i> اعمال فیلتر
+                    </button>
+                </div>
+            </form>
+
+            <!-- اطلاعات خلاصه -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <h6>موجودی اولیه</h6>
+                            <h4>{{ opening_balance|floatformat:"-2" }}</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h6>کل ورودی</h6>
+                            <h4>{{ page_obj|length }}</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body text-center">
+                            <h6>کل خروجی</h6>
+                            <h4>{{ page_obj|length }}</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body text-center">
+                            <h6>موجودی نهایی</h6>
+                            <h4>{{ opening_balance|floatformat:"-2" }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- جدول کاردکس -->
             <div class="table-responsive">
-                <table class="table table-striped table-hover table-bordered small">
+                <table class="table table-striped table-hover table-bordered small kardex-table">
                     <thead class="table-dark">
                         <tr>
-                            <th>تاریخ</th>
-                            <th>نوع عملیات</th>
-                            <th>شماره سند</th>
-                            <th>طرف حساب</th>
-                            <th class="text-center">ورودی</th>
-                            <th class="text-center">خروجی</th>
-                            <th class="text-center">مانده</th>
+                            <th class="sortable-header" data-column="Date" style="cursor: pointer;">
+                                تاریخ
+                                <i class="bi bi-arrow-down-up"></i>
+                            </th>
+                            <th class="sortable-header" data-column="OperationType" style="cursor: pointer;">
+                                نوع عملیات
+                                <i class="bi bi-arrow-down-up"></i>
+                            </th>
+                            <th class="sortable-header" data-column="DocumentCode" style="cursor: pointer;">
+                                شماره سند
+                                <i class="bi bi-arrow-down-up"></i>
+                            </th>
+                            <th class="sortable-header" data-column="PersonName" style="cursor: pointer;">
+                                طرف حساب
+                                <i class="bi bi-arrow-down-up"></i>
+                            </th>
+                            <th class="sortable-header" data-column="Incoming" style="cursor: pointer;">
+                                ورودی
+                                <i class="bi bi-arrow-down-up"></i>
+                            </th>
+                            <th class="sortable-header" data-column="Outgoing" style="cursor: pointer;">
+                                خروجی
+                                <i class="bi bi-arrow-down-up"></i>
+                            </th>
+                            <th class="sortable-header" data-column="Amount" style="cursor: pointer;">
+                                قیمت واحد
+                                <i class="bi bi-arrow-down-up"></i>
+                            </th>
+                            <th class="sortable-header" data-column="Balance" style="cursor: pointer;">
+                                مانده
+                                <i class="bi bi-arrow-down-up"></i>
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
+                        <tr class="table-info">
+                            <td colspan="7" class="fw-bold">مانده از قبل</td>
+                            <td class="text-center fw-bold">{{ opening_balance|floatformat:"-2" }}</td>
+                        </tr>
                         {% for entry in kardex_entries %}
                         <tr>
                             <td>{{ entry.Date }}</td>
@@ -30,18 +172,287 @@
                             <td>{{ entry.PersonName|default:"-" }}</td>
                             <td class="text-center text-success">{{ entry.Incoming|floatformat:"-2"|default_if_none:"" }}</td>
                             <td class="text-center text-danger">{{ entry.Outgoing|floatformat:"-2"|default_if_none:"" }}</td>
+                            <td class="text-center">{{ entry.Amount|floatformat:"-2"|default_if_none:"" }}</td>
                             <td class="text-center fw-bold">{{ entry.Balance|floatformat:"-2" }}</td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="7" class="text-center">هیچ گردشی برای این کالا ثبت نشده است.</td></tr>
+                        <tr><td colspan="8" class="text-center">هیچ گردشی در این بازه زمانی یافت نشد.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-        </div>
-        <div class="card-footer">
-            <a href="{% url 'accounting:good_detail' good.code %}" class="btn btn-secondary btn-sm">بازگشت به جزئیات کالا</a>
+
+            <!-- صفحه‌بندی -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="صفحه‌بندی کاردکس">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1&{{ request.GET.urlencode }}">اول</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">قبلی</a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}&{{ request.GET.urlencode }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">بعدی</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&{{ request.GET.urlencode }}">آخر</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<!-- Modal تنظیمات -->
+<div class="modal fade" id="kardex-settings-modal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تنظیمات نمایش کاردکس</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- ستون‌های قابل نمایش -->
+                    <div class="col-md-6">
+                        <h6>ستون‌های قابل نمایش</h6>
+                        <div class="form-check">
+                            <input class="form-check-input column-toggle" type="checkbox" id="col-date" data-column="Date" checked>
+                            <label class="form-check-label" for="col-date">تاریخ</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input column-toggle" type="checkbox" id="col-operation" data-column="OperationType" checked>
+                            <label class="form-check-label" for="col-operation">نوع عملیات</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input column-toggle" type="checkbox" id="col-document" data-column="DocumentCode" checked>
+                            <label class="form-check-label" for="col-document">شماره سند</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input column-toggle" type="checkbox" id="col-person" data-column="PersonName" checked>
+                            <label class="form-check-label" for="col-person">طرف حساب</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input column-toggle" type="checkbox" id="col-incoming" data-column="Incoming" checked>
+                            <label class="form-check-label" for="col-incoming">ورودی</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input column-toggle" type="checkbox" id="col-outgoing" data-column="Outgoing" checked>
+                            <label class="form-check-label" for="col-outgoing">خروجی</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input column-toggle" type="checkbox" id="col-amount" data-column="Amount" checked>
+                            <label class="form-check-label" for="col-amount">قیمت واحد</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input column-toggle" type="checkbox" id="col-balance" data-column="Balance" checked>
+                            <label class="form-check-label" for="col-balance">مانده</label>
+                        </div>
+                    </div>
+                    
+                    <!-- تنظیمات تم -->
+                    <div class="col-md-6">
+                        <h6>تنظیمات تم</h6>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="table-striped" checked>
+                            <label class="form-check-label" for="table-striped">خطوط راه‌راه</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="table-hover" checked>
+                            <label class="form-check-label" for="table-hover">اثر hover</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="compact-view">
+                            <label class="form-check-label" for="compact-view">نمایش فشرده</label>
+                        </div>
+                        
+                        <hr>
+                        
+                        <h6>تنظیمات پیش‌فرض</h6>
+                        <div class="mb-3">
+                            <label for="modal-page-size" class="form-label">تعداد در صفحه</label>
+                            <select id="modal-page-size" class="form-select">
+                                <option value="10">۱۰</option>
+                                <option value="25" selected>۲۵</option>
+                                <option value="50">۵۰</option>
+                                <option value="100">۱۰۰</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="default-sort-column" class="form-label">مرتب‌سازی پیش‌فرض</label>
+                            <select id="default-sort-column" class="form-select">
+                                <option value="Date" selected>تاریخ</option>
+                                <option value="OperationType">نوع عملیات</option>
+                                <option value="DocumentCode">شماره سند</option>
+                                <option value="PersonName">طرف حساب</option>
+                                <option value="Incoming">ورودی</option>
+                                <option value="Outgoing">خروجی</option>
+                                <option value="Amount">قیمت واحد</option>
+                                <option value="Balance">مانده</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                <button type="button" class="btn btn-primary" id="save-settings">ذخیره تنظیمات</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_script %}
+<script src="{% static 'js/kardex_manager.js' %}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // --- راه‌اندازی تقویم‌ها ---
+    kamaDatepicker('start_date_input', {
+        buttonsColor: "blue",
+        forceFarsiDigits: true,
+        placeholder: "تاریخ شروع",
+        markToday: true,
+        gotoToday: true,
+    });
+    kamaDatepicker('end_date_input', {
+        buttonsColor: "blue",
+        forceFarsiDigits: true,
+        placeholder: "تاریخ پایان",
+        markToday: true,
+        gotoToday: true,
+    });
+
+    // --- بررسی و اعمال تنظیمات ذخیره شده در بارگذاری اولیه ---
+    if (window.kardexManager) {
+        const shouldRedirect = window.kardexManager.checkAndApplyStoredSettings();
+        if (shouldRedirect) {
+            return; // از ادامه اجرای کد جلوگیری کن
+        }
+    }
+
+    // --- منطق Dropdown محدوده تاریخ ---
+    const dateRangeSelector = document.getElementById('date_range_selector');
+    const startDateInput = document.getElementById('start_date_input');
+    const endDateInput = document.getElementById('end_date_input');
+
+    dateRangeSelector.addEventListener('change', function() {
+        const today = '{{ ""|get_jalali_today }}';
+        let startDate = '';
+        let endDate = today;
+
+        switch (this.value) {
+            case 'today':
+                startDate = today;
+                break;
+            case 'current_month':
+                startDate = '{{ ""|get_jalali_first_of_month }}';
+                break;
+            case 'current_year':
+                startDate = '{{ ""|get_jalali_first_of_year }}';
+                break;
+            case 'last_7_days':
+                startDate = '{{ ""|get_jalali_days_ago:7 }}';
+                break;
+            case 'last_30_days':
+                startDate = '{{ ""|get_jalali_days_ago:30 }}';
+                break;
+            case 'all_time':
+                startDate = '1370/01/01'; // یک تاریخ خیلی قدیمی
+                break;
+            default:
+                return; // برای گزینه custom کاری انجام نده
+        }
+        startDateInput.value = startDate;
+        endDateInput.value = endDate;
+    });
+
+    // --- اعمال تنظیمات موجود در URL ---
+    const urlParams = new URLSearchParams(window.location.search);
+    if (window.kardexManager) {
+        console.log('Applying settings from URL params');
+        
+        // به‌روزرسانی تنظیمات از URL
+        if (urlParams.get('start_date')) {
+            window.kardexManager.settings.date_range.start_date = urlParams.get('start_date');
+        }
+        if (urlParams.get('end_date')) {
+            window.kardexManager.settings.date_range.end_date = urlParams.get('end_date');
+        }
+        if (urlParams.get('page_size')) {
+            window.kardexManager.settings.default_page_size = parseInt(urlParams.get('page_size'));
+        }
+        if (urlParams.get('sort_column')) {
+            window.kardexManager.settings.default_sort_column = urlParams.get('sort_column');
+        }
+        if (urlParams.get('sort_direction')) {
+            window.kardexManager.settings.default_sort_direction = urlParams.get('sort_direction');
+        }
+        
+        // به‌روزرسانی فیلترها
+        ['operation_type', 'store', 'person', 'document_code'].forEach(filter => {
+            if (urlParams.get(filter)) {
+                window.kardexManager.settings.filters[filter] = urlParams.get(filter);
+            }
+        });
+        
+        // ذخیره تنظیمات به‌روزرسانی شده
+        window.kardexManager.saveSettings();
+        
+        // اعمال تنظیمات روی فرم
+        window.kardexManager.populateFormFields();
+    }
+
+    // --- پاک کردن تنظیمات ---
+    document.getElementById('clear-settings-btn').addEventListener('click', function() {
+        if (confirm('آیا مطمئن هستید که می‌خواهید تمام تنظیمات را پاک کنید؟')) {
+            localStorage.removeItem('kardex_settings');
+            location.reload();
+        }
+    });
+
+    // --- ذخیره تنظیمات از modal ---
+    document.getElementById('save-settings').addEventListener('click', function() {
+        console.log('Saving settings from modal');
+        
+        // به‌روزرسانی تنظیمات
+        if (window.kardexManager) {
+            window.kardexManager.settings.theme.table_striped = document.getElementById('table-striped').checked;
+            window.kardexManager.settings.theme.table_hover = document.getElementById('table-hover').checked;
+            window.kardexManager.settings.theme.compact_view = document.getElementById('compact-view').checked;
+            window.kardexManager.settings.default_page_size = parseInt(document.getElementById('modal-page-size').value);
+            window.kardexManager.settings.default_sort_column = document.getElementById('default-sort-column').value;
+            
+            // ذخیره تنظیمات
+            window.kardexManager.saveSettings();
+            
+            // اعمال تنظیمات
+            window.kardexManager.applySettings();
+        }
+        
+        // بستن modal
+        bootstrap.Modal.getInstance(document.getElementById('kardex-settings-modal')).hide();
+    });
+});
+</script>
 {% endblock %} 
